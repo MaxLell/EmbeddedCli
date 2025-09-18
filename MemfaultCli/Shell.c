@@ -7,7 +7,7 @@
 
 #define SHELL_RX_BUFFER_SIZE ( 256 )
 #define SHELL_MAX_ARGS       ( 16 )
-#define SHELL_PROMPT         "shell> "
+#define SHELL_PROMPT         "$> "
 
 #define SHELL_FOR_EACH_COMMAND( command )                                      \
     for( const Shell_Cmd_t *command = g_atShellCmds;                           \
