@@ -12,10 +12,6 @@
 #define CLI_NULL_TERMINATOR_CHARACTER '\0'
 #define CLI_SPACE_CHARACTER           ' '
 
-#define CLI_FOR_ALL_COMMANDS( ptCommandBinding )                               \
-    for( const Cli_Binding_t *ptCommandBinding = g_shell_commands;             \
-         ptCommandBinding < &g_shell_commands[g_num_shell_commands];           \
-         ptCommandBinding++ )
 
 static Cli_Config_t *g_tCli_Config = NULL;
 
@@ -125,7 +121,8 @@ static void Cli_WritePrompt( void )
  */
 static const Cli_Binding_t *Cli_FindCommand( const char *pcCommandName )
 {
-    CLI_FOR_ALL_COMMANDS( command )
+    for( const Cli_Binding_t *command = g_shell_commands;
+         command < &g_shell_commands[g_num_shell_commands]; command++ )
     {
         if( strcmp( command->command, pcCommandName ) == 0 )
         {
@@ -238,7 +235,8 @@ void Cli_WriteString( const char *str )
 
 int CliBinding_HelpHandler( int argc, char *argv[] )
 {
-    CLI_FOR_ALL_COMMANDS( command )
+    for( const Cli_Binding_t *command = g_shell_commands;
+         command < &g_shell_commands[g_num_shell_commands]; command++ )
     {
         Cli_EchoString( command->command );
         Cli_EchoString( ": " );
