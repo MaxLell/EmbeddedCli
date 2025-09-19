@@ -150,7 +150,7 @@ void Cli_Initialize( Cli_Config_t *in_ptCfg )
     Cli_EchoString( CLI_PROMPT );
 }
 
-void Cli_AddCharacter( char in_cChar )
+void Cli_AddCharacter( Cli_Config_t *ptCfg, char in_cChar )
 {
     assert( Cli_IsInitialized() );
     if( '\r' == in_cChar || Cli_IsRxBufferFull() || !Cli_IsInitialized() )
@@ -160,18 +160,18 @@ void Cli_AddCharacter( char in_cChar )
 
     if( '\b' == in_cChar )
     {
-        if( g_tCli_Config->tRxBufferSize > 0 )
+        if( ptCfg->tRxBufferSize > 0 )
         {
-            g_tCli_Config->tRxBufferSize--;
-            size_t idx = g_tCli_Config->tRxBufferSize;
-            g_tCli_Config->acRxByteBuffer[idx] = '\0';
+            ptCfg->tRxBufferSize--;
+            size_t idx = ptCfg->tRxBufferSize;
+            ptCfg->acRxByteBuffer[idx] = '\0';
         }
         return;
     }
 
-    size_t idx = g_tCli_Config->tRxBufferSize;
-    g_tCli_Config->acRxByteBuffer[idx] = in_cChar;
-    g_tCli_Config->tRxBufferSize++;
+    size_t idx = ptCfg->tRxBufferSize;
+    ptCfg->acRxByteBuffer[idx] = in_cChar;
+    ptCfg->tRxBufferSize++;
 }
 
 void Cli_HandleUnknownCommand( const char *const in_pcCmdName )
@@ -182,7 +182,7 @@ void Cli_HandleUnknownCommand( const char *const in_pcCmdName )
     Cli_EchoString( "Type 'help' to list all commands\n" );
 }
 
-void Cli_Process( void )
+void Cli_Process( Cli_Config_t *ptCfg )
 {
     assert( Cli_IsInitialized() );
 
@@ -195,12 +195,11 @@ void Cli_Process( void )
     int   s32NofArguments = 0;
 
     char *next_arg = NULL;
-    for( size_t i = 0; i < g_tCli_Config->tRxBufferSize &&
-                       s32NofArguments < CLI_MAX_NOF_ARGUMENTS;
-         ++i )
+    for( size_t i = 0;
+         i < ptCfg->tRxBufferSize && s32NofArguments < CLI_MAX_NOF_ARGUMENTS; ++i )
     {
-        char *const c = &g_tCli_Config->acRxByteBuffer[i];
-        if( ' ' == *c || '\n' == *c || ( g_tCli_Config->tRxBufferSize - 1 ) == i )
+        char *const c = &ptCfg->acRxByteBuffer[i];
+        if( ' ' == *c || '\n' == *c || ( ptCfg->tRxBufferSize - 1 ) == i )
         {
             *c = '\0';
             if( next_arg )
@@ -217,7 +216,7 @@ void Cli_Process( void )
         }
     }
 
-    if( CLI_RX_BUFFER_SIZE == g_tCli_Config->tRxBufferSize )
+    if( CLI_RX_BUFFER_SIZE == ptCfg->tRxBufferSize )
     {
         Cli_EchoCharacter( '\n' );
     }

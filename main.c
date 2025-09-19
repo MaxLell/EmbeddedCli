@@ -47,8 +47,8 @@ int main( void )
     while( true )
     {
         char c = console_getc();
-        Cli_AddCharacter( c );
-        Cli_Process();
+        Cli_AddCharacter( &tCliCfg, c );
+        Cli_Process( &tCliCfg );
     }
     return 0;
 }
