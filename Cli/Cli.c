@@ -1,13 +1,15 @@
-
 #include "Cli.h"
 
 #include <stdbool.h>
 #include <stddef.h>
 #include <string.h>
 
-#define CLI_RX_BUFFER_SIZE    ( 256 )
-#define CLI_MAX_NOF_ARGUMENTS ( 16 )
-#define CLI_PROMPT            "cli> "
+#define CLI_RX_BUFFER_SIZE            ( 256 )
+#define CLI_MAX_NOF_ARGUMENTS         ( 16 )
+#define CLI_PROMPT                    "cli> "
+#define CLI_NEWLINE_CHARACTER         '\n'
+#define CLI_CARRIAGE_RETURN_CHARACTER '\r'
+#define CLI_BACKSPACE_CHARACTER       '\b'
 
 
 #define CLI_FOR_ALL_COMMANDS( ptCommandBinding )                               \
@@ -54,16 +56,16 @@ static void Cli_WriteCharacter( char c )
  */
 static void Cli_EchoCharacter( char c )
 {
-    if( '\n' == c )
+    if( CLI_NEWLINE_CHARACTER == c )
     {
-        Cli_WriteCharacter( '\r' );
-        Cli_WriteCharacter( '\n' );
+        Cli_WriteCharacter( CLI_CARRIAGE_RETURN_CHARACTER );
+        Cli_WriteCharacter( CLI_NEWLINE_CHARACTER );
     }
-    else if( '\b' == c )
+    else if( CLI_BACKSPACE_CHARACTER == c )
     {
-        Cli_WriteCharacter( '\b' );
+        Cli_WriteCharacter( CLI_BACKSPACE_CHARACTER );
         Cli_WriteCharacter( ' ' );
-        Cli_WriteCharacter( '\b' );
+        Cli_WriteCharacter( CLI_BACKSPACE_CHARACTER );
     }
     else
     {
@@ -151,7 +153,8 @@ static const Cli_Binding_t *Cli_FindCommand( const char *name )
  */
 static void Cli_ProcessRxBuffer( void )
 {
-    if( Cli_GetLastEntryFromRxBuffer() != '\n' && !Cli_IsRxBufferFull() )
+    if( Cli_GetLastEntryFromRxBuffer() != CLI_NEWLINE_CHARACTER &&
+        !Cli_IsRxBufferFull() )
     {
         return;
     }
@@ -164,7 +167,8 @@ static void Cli_ProcessRxBuffer( void )
          i < g_tCli_Context.rx_size && argc < CLI_MAX_NOF_ARGUMENTS; ++i )
     {
         char *const c = &g_tCli_Context.rx_buffer[i];
-        if( *c == ' ' || *c == '\n' || i == g_tCli_Context.rx_size - 1 )
+        if( *c == ' ' || *c == CLI_NEWLINE_CHARACTER ||
+            i == g_tCli_Context.rx_size - 1 )
         {
             *c = '\0';
             if( next_arg )
@@ -181,7 +185,7 @@ static void Cli_ProcessRxBuffer( void )
 
     if( g_tCli_Context.rx_size == CLI_RX_BUFFER_SIZE )
     {
-        Cli_EchoCharacter( '\n' );
+        Cli_EchoCharacter( CLI_NEWLINE_CHARACTER );
     }
 
     if( argc >= 1 )
@@ -191,8 +195,12 @@ static void Cli_ProcessRxBuffer( void )
         {
             Cli_EchoString( "Unknown command: " );
             Cli_EchoString( argv[0] );
-            Cli_EchoCharacter( '\n' );
-            Cli_EchoString( "Type 'help' to list all commands\n" );
+            Cli_EchoCharacter( CLI_NEWLINE_CHARACTER );
+            Cli_EchoString( "Type 'help' to list all commands\n" ); // String
+                                                                    // literals
+                                                                    // left
+                                                                    // as-is for
+                                                                    // now
         }
         else
         {
@@ -207,18 +215,19 @@ void Cli_Initialize( const Cli_Config_t *impl )
 {
     g_tCli_Context.send_char = impl->send_char;
     Cli_ResetRxBuffer();
-    Cli_EchoString( "\n" CLI_PROMPT );
+    Cli_EchoString( "\n" CLI_PROMPT ); // String literals left as-is for now
 }
 
 void Cli_ReadAndProcessCharacter( char c )
 {
-    if( c == '\r' || Cli_IsRxBufferFull() || !Cli_IsInitialized() )
+    if( c == CLI_CARRIAGE_RETURN_CHARACTER || Cli_IsRxBufferFull() ||
+        !Cli_IsInitialized() )
     {
         return;
     }
     Cli_EchoCharacter( c );
 
-    if( c == '\b' )
+    if( c == CLI_BACKSPACE_CHARACTER )
     {
         if( g_tCli_Context.rx_size > 0 )
         {
@@ -235,7 +244,7 @@ void Cli_ReadAndProcessCharacter( char c )
 void Cli_WriteString( const char *str )
 {
     Cli_EchoString( str );
-    Cli_EchoCharacter( '\n' );
+    Cli_EchoCharacter( CLI_NEWLINE_CHARACTER );
 }
 
 int CliBinding_HelpHandler( int argc, char *argv[] )
@@ -245,7 +254,7 @@ int CliBinding_HelpHandler( int argc, char *argv[] )
         Cli_EchoString( command->command );
         Cli_EchoString( ": " );
         Cli_EchoString( command->help );
-        Cli_EchoCharacter( '\n' );
+        Cli_EchoCharacter( CLI_NEWLINE_CHARACTER );
     }
     return 0;
 }
