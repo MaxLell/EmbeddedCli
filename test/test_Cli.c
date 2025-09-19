@@ -34,14 +34,14 @@ void test_Cli_Initialize_sets_initialized_flag( void )
 //     Cli_Initialize( &cfg );
 //     for( int i = 0; i < CLI_RX_BUFFER_SIZE + 10; ++i )
 //     {
-//         Cli_AddCharToRxBuffer( 'B' );
+//         Cli_AddCharacter( 'B' );
 //     }
 //     TEST_ASSERT_LESS_OR_EQUAL( CLI_RX_BUFFER_SIZE, cfg.tRxBufferSize );
 // }
 
 // void test_Cli_ProcessRxBuffer_executes_command( void )
 // {
-//     // This test is a stub, as command execution needs a real binding table
-//     TEST_IGNORE_MESSAGE( "Command execution test needs shell command "
+//     // This test is a stub, as pcCmdName execution needs a real binding table
+//     TEST_IGNORE_MESSAGE( "Command execution test needs shell pcCmdName "
 //                          "bindings" );
 // }

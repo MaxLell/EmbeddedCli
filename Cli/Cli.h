@@ -4,13 +4,13 @@
 #include <stddef.h>
 
 #define CLI_RX_BUFFER_SIZE ( 256 )
-#define CLI_FAIL_PROMPT    "> [FAIL]; "
-#define CLI_OK_PROMPT      "> [OK];   "
+#define CLI_OK_PROMPT      "\033[32m[OK]  \033[0m "
+#define CLI_FAIL_PROMPT    "\033[31m[FAIL]\033[0m "
 
 typedef struct
 {
-    const char *command;
-    int ( *handler )( int argc, char *argv[] );
+    const char *pcCmdName;
+    void ( *handler )( int argc, char *argv[] );
     const char *help;
 } Cli_Binding_t;
 
@@ -27,6 +27,6 @@ typedef struct
 
 void Cli_Initialize( Cli_Config_t *ptCfg );
 
-void Cli_AddCharToRxBuffer( char c );
+void Cli_AddCharacter( char c );
 
-void Cli_ProcessRxBuffer();
+void Cli_Process( void );

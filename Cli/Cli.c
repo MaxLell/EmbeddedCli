@@ -120,21 +120,19 @@ static void Cli_WritePrompt( void )
 
 
 /**
- * @brief Searches for a shell command by its name.
- * @param name Name of the command.
- * @return Pointer to the found command or NULL.
+ * @brief Searches for a shell pcCmdName by its name.
+ * @param name Name of the pcCmdName.
+ * @return Pointer to the found pcCmdName or NULL.
  */
 static const Cli_Binding_t *Cli_FindCommand( const char *pcCommandName )
 {
     assert( Cli_IsInitialized() );
-    for( const Cli_Binding_t *command = g_tCli_Config->atCliCmdBindingsBuffer;
-         command <
-         &g_tCli_Config->atCliCmdBindingsBuffer[g_tCli_Config->tNofBindings];
-         command++ )
+    for( size_t i = 0; i < g_tCli_Config->tNofBindings; ++i )
     {
-        if( strcmp( command->command, pcCommandName ) == 0 )
+        const Cli_Binding_t *ptBinding = &g_tCli_Config->atCliCmdBindingsBuffer[i];
+        if( strcmp( ptBinding->pcCmdName, pcCommandName ) == 0 )
         {
-            return command;
+            return ptBinding;
         }
     }
     return NULL;
@@ -158,7 +156,7 @@ void Cli_Initialize( Cli_Config_t *in_ptCfg )
     Cli_EchoString( CLI_PROMPT );
 }
 
-void Cli_AddCharToRxBuffer( char c )
+void Cli_AddCharacter( char c )
 {
     assert( Cli_IsInitialized() );
     if( c == CLI_CARRIAGE_RETURN_CHARACTER || Cli_IsRxBufferFull() ||
@@ -181,7 +179,7 @@ void Cli_AddCharToRxBuffer( char c )
     g_tCli_Config->acRxByteBuffer[g_tCli_Config->tRxBufferSize++] = c;
 }
 
-void Cli_ProcessRxBuffer( void )
+void Cli_Process( void )
 {
     assert( Cli_IsInitialized() );
 
@@ -225,7 +223,7 @@ void Cli_ProcessRxBuffer( void )
         const Cli_Binding_t *ptCmdBinding = Cli_FindCommand( argv[0] );
         if( !ptCmdBinding )
         {
-            Cli_EchoString( "Unknown command: " );
+            Cli_EchoString( CLI_FAIL_PROMPT "Unknown pcCmdName: " );
             Cli_EchoString( argv[0] );
             Cli_EchoCharacter( CLI_NEWLINE_CHARACTER );
             Cli_EchoString( "Type 'help' to list all commands\n" );
@@ -249,15 +247,16 @@ void Cli_WriteString( const char *str )
 int CliBinding_HelpHandler( int argc, char *argv[] )
 {
     assert( Cli_IsInitialized() );
-    for( const Cli_Binding_t *command = g_tCli_Config->atCliCmdBindingsBuffer;
-         command <
-         &g_tCli_Config->atCliCmdBindingsBuffer[g_tCli_Config->tNofBindings];
-         command++ )
+
+    Cli_EchoString( "\n" );
+    for( size_t i = 0; i < g_tCli_Config->tNofBindings; ++i )
     {
+        const Cli_Binding_t *ptCmdBinding =
+            &g_tCli_Config->atCliCmdBindingsBuffer[i];
         Cli_EchoString( "* " );
-        Cli_EchoString( command->command );
+        Cli_EchoString( ptCmdBinding->pcCmdName );
         Cli_EchoString( ": \n              " );
-        Cli_EchoString( command->help );
+        Cli_EchoString( ptCmdBinding->help );
         Cli_EchoCharacter( CLI_NEWLINE_CHARACTER );
     }
     return 0;
