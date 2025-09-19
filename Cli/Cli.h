@@ -3,9 +3,9 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-#define CLI_RX_BUFFER_SIZE ( 256 )
-#define CLI_OK_PROMPT      "\033[32m[OK]  \033[0m "
-#define CLI_FAIL_PROMPT    "\033[31m[FAIL]\033[0m "
+#define CLI_MAX_RX_BUFFER_SIZE ( 256 )
+#define CLI_OK_PROMPT          "\033[32m[OK]  \033[0m "
+#define CLI_FAIL_PROMPT        "\033[31m[FAIL]\033[0m "
 
 typedef struct
 {

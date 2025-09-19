@@ -115,7 +115,7 @@ static bool Cli_IsRxBufferFull( Cli_Config_t *ptCfg )
         CLI_ASSERT( g_tCli_Config == ptCfg );
         CLI_ASSERT( true == ptCfg->bIsInitialized );
     }
-    return ( ptCfg->tRxBufferSize >= CLI_RX_BUFFER_SIZE );
+    return ( ptCfg->tRxBufferSize >= CLI_MAX_RX_BUFFER_SIZE );
 }
 
 
@@ -130,7 +130,7 @@ static void Cli_ResetRxBuffer( Cli_Config_t *ptCfg )
         CLI_ASSERT( g_tCli_Config == ptCfg );
         CLI_ASSERT( true == ptCfg->bIsInitialized );
     }
-    memset( ptCfg->acRxByteBuffer, 0, CLI_RX_BUFFER_SIZE );
+    memset( ptCfg->acRxByteBuffer, 0, CLI_MAX_RX_BUFFER_SIZE );
     ptCfg->tRxBufferSize = 0;
 }
 
@@ -230,9 +230,14 @@ void Cli_AddCharacter( Cli_Config_t *ptCfg, char in_cChar )
         CLI_ASSERT( ptCfg->pFnWriteCharacter );
     }
 
-    if( '\r' == in_cChar || Cli_IsRxBufferFull( ptCfg ) ||
-        false == ptCfg->bIsInitialized )
+    if( '\r' == in_cChar )
     {
+        return;
+    }
+
+    if( true == Cli_IsRxBufferFull( ptCfg ) )
+    {
+        Cli_EchoString( ptCfg, "Buffer is full" );
         return;
     }
 
@@ -250,6 +255,7 @@ void Cli_AddCharacter( Cli_Config_t *ptCfg, char in_cChar )
     size_t idx = ptCfg->tRxBufferSize;
     ptCfg->acRxByteBuffer[idx] = in_cChar;
     ptCfg->tRxBufferSize++;
+    CLI_ASSERT( ptCfg->tRxBufferSize < CLI_MAX_RX_BUFFER_SIZE );
 }
 
 void Cli_HandleUnknownCommand( Cli_Config_t     *ptCfg,
@@ -309,7 +315,7 @@ void Cli_Process( Cli_Config_t *ptCfg )
         }
     }
 
-    if( CLI_RX_BUFFER_SIZE == ptCfg->tRxBufferSize )
+    if( CLI_MAX_RX_BUFFER_SIZE == ptCfg->tRxBufferSize )
     {
         Cli_EchoCharacter( ptCfg, '\n' );
     }
