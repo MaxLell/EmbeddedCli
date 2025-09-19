@@ -11,6 +11,7 @@ extern int CliBinding_KvWrite( int argc, char *argv[] );
 extern int CliBinding_HelloWorld( int argc, char *argv[] );
 extern int CliBinding_HelpHandler( int argc, char *argv[] );
 extern int Cli_DisplayArgs( int argc, char *argv[] );
+extern int Cli_ClearScreen( int argc, char *argv[] );
 
 int console_putc( char c )
 {
@@ -30,7 +31,9 @@ int main( void )
         { "kv_write", CliBinding_KvWrite, "Write a Key/Value pair" },
         { "hello", CliBinding_HelloWorld, "Say hello" },
         { "help", CliBinding_HelpHandler, "Lists all commands" },
-        { "display_args", Cli_DisplayArgs, "Displays the given cli arguments" } };
+        { "display_args", Cli_DisplayArgs, "Displays the given cli arguments" },
+        { "clear", Cli_ClearScreen, "Clears the screen" },
+    };
 
     Cli_Config_t tCliCfg = { .pFnWriteCharacter = console_putc,
                              .bIsInitialized = false,

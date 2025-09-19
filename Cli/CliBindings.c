@@ -56,3 +56,10 @@ int Cli_DisplayArgs( int argc, char *argv[] )
     }
     return 0;
 }
+
+int Cli_ClearScreen( int argc, char *argv[] )
+{
+    // ANSI escape code to clear screen and move cursor to home
+    Cli_WriteString( "\033[2J\033[H" );
+    return 0;
+}
