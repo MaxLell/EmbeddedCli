@@ -162,18 +162,22 @@ void Cli_AddCharacter( char in_cChar )
     {
         if( g_tCli_Config->tRxBufferSize > 0 )
         {
-            g_tCli_Config->acRxByteBuffer[--g_tCli_Config->tRxBufferSize] = '\0';
+            g_tCli_Config->tRxBufferSize--;
+            size_t idx = g_tCli_Config->tRxBufferSize;
+            g_tCli_Config->acRxByteBuffer[idx] = '\0';
         }
         return;
     }
 
-    g_tCli_Config->acRxByteBuffer[g_tCli_Config->tRxBufferSize++] = in_cChar;
+    size_t idx = g_tCli_Config->tRxBufferSize;
+    g_tCli_Config->acRxByteBuffer[idx] = in_cChar;
+    g_tCli_Config->tRxBufferSize++;
 }
 
-void Cli_HandleUnknownCommand( char *pcCmdName )
+void Cli_HandleUnknownCommand( const char *const in_pcCmdName )
 {
     Cli_EchoString( CLI_FAIL_PROMPT "Unknown command: " );
-    Cli_EchoString( pcCmdName );
+    Cli_EchoString( in_pcCmdName );
     Cli_EchoCharacter( '\n' );
     Cli_EchoString( "Type 'help' to list all commands\n" );
 }
@@ -187,12 +191,13 @@ void Cli_Process( void )
         return;
     }
 
-    char *argv[CLI_MAX_NOF_ARGUMENTS] = { 0 };
-    int   argc = 0;
+    char *acArguments[CLI_MAX_NOF_ARGUMENTS] = { 0 };
+    int   s32NofArguments = 0;
 
     char *next_arg = NULL;
-    for( size_t i = 0;
-         i < g_tCli_Config->tRxBufferSize && argc < CLI_MAX_NOF_ARGUMENTS; ++i )
+    for( size_t i = 0; i < g_tCli_Config->tRxBufferSize &&
+                       s32NofArguments < CLI_MAX_NOF_ARGUMENTS;
+         ++i )
     {
         char *const c = &g_tCli_Config->acRxByteBuffer[i];
         if( ' ' == *c || '\n' == *c || ( g_tCli_Config->tRxBufferSize - 1 ) == i )
@@ -200,7 +205,9 @@ void Cli_Process( void )
             *c = '\0';
             if( next_arg )
             {
-                argv[argc++] = next_arg;
+                int idx = s32NofArguments;
+                acArguments[idx] = next_arg;
+                s32NofArguments++;
                 next_arg = NULL;
             }
         }
@@ -215,16 +222,16 @@ void Cli_Process( void )
         Cli_EchoCharacter( '\n' );
     }
 
-    if( argc >= 1 )
+    if( s32NofArguments >= 1 )
     {
-        const Cli_Binding_t *ptCmdBinding = Cli_FindCommand( argv[0] );
+        const Cli_Binding_t *ptCmdBinding = Cli_FindCommand( acArguments[0] );
         if( !ptCmdBinding )
         {
-            Cli_HandleUnknownCommand( argv[0] );
+            Cli_HandleUnknownCommand( acArguments[0] );
         }
         else
         {
-            ptCmdBinding->pFnCmdHandler( argc, argv );
+            ptCmdBinding->pFnCmdHandler( s32NofArguments, acArguments );
         }
     }
     Cli_ResetRxBuffer();
