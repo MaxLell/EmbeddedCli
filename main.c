@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 
+
 int console_putc( char c )
 {
     return putchar( c );
@@ -17,9 +18,13 @@ char console_getc( void )
 
 int main( void )
 {
-    Cli_Config_t tCliCfg = {
-        .send_char = console_putc,
-    };
+    static char acRxBuffer[CLI_RX_BUFFER_SIZE] = { 0 };
+
+    Cli_Config_t tCliCfg = { .pFnWriteCharacter = console_putc,
+                             .bIsInitialized = false,
+                             .acRxBuffer = acRxBuffer,
+                             .tRxBufferSize = CLI_RX_BUFFER_SIZE };
+
     Cli_Initialize( &tCliCfg );
 
     char c;

@@ -1,6 +1,17 @@
 #pragma once
 
+#include <stdbool.h>
 #include <stddef.h>
+
+#define CLI_RX_BUFFER_SIZE ( 256 )
+
+typedef struct
+{
+    bool bIsInitialized;
+    int ( *pFnWriteCharacter )( char c );
+    size_t tRxBufferSize;
+    char  *acRxBuffer;
+} Cli_Config_t;
 
 typedef struct
 {
@@ -12,12 +23,7 @@ typedef struct
 extern const Cli_Binding_t *const g_shell_commands;
 extern const size_t               g_num_shell_commands;
 
-typedef struct
-{
-    int ( *send_char )( char c );
-} Cli_Config_t;
-
-void Cli_Initialize( const Cli_Config_t *impl );
+void Cli_Initialize( Cli_Config_t *impl );
 
 void Cli_ReadAndProcessCharacter( char c );
 

@@ -4,37 +4,29 @@
 #include <stddef.h>
 #include <string.h>
 
-#define CLI_RX_BUFFER_SIZE            ( 256 )
 #define CLI_MAX_NOF_ARGUMENTS         ( 16 )
 #define CLI_PROMPT                    "cli> "
 #define CLI_NEWLINE_CHARACTER         '\n'
 #define CLI_CARRIAGE_RETURN_CHARACTER '\r'
 #define CLI_BACKSPACE_CHARACTER       '\b'
-
+#define CLI_NULL_TERMINATOR_CHARACTER '\0'
+#define CLI_SPACE_CHARACTER           ' '
 
 #define CLI_FOR_ALL_COMMANDS( ptCommandBinding )                               \
     for( const Cli_Binding_t *ptCommandBinding = g_shell_commands;             \
          ptCommandBinding < &g_shell_commands[g_num_shell_commands];           \
          ptCommandBinding++ )
 
-typedef struct
-{
-    int ( *send_char )( char c );
-    size_t rx_size;
-    char   rx_buffer[CLI_RX_BUFFER_SIZE];
-} Cli_Context_t;
-
-static Cli_Context_t g_tCli_Context = { 0 };
+static Cli_Config_t *g_tCli_Config = NULL;
 
 /**
  * @brief Checks if the shell is initialized.
- * @return true if send_char is set, false otherwise.
+ * @return true if pFnWriteCharacter is set, false otherwise.
  */
 static bool Cli_IsInitialized( void )
 {
-    return g_tCli_Context.send_char != NULL;
+    return g_tCli_Config->pFnWriteCharacter != NULL;
 }
-
 
 /**
  * @brief Sends a character via the shell interface.
@@ -46,7 +38,7 @@ static void Cli_WriteCharacter( char c )
     {
         return;
     }
-    g_tCli_Context.send_char( c );
+    g_tCli_Config->pFnWriteCharacter( c );
 }
 
 
@@ -64,7 +56,7 @@ static void Cli_EchoCharacter( char c )
     else if( CLI_BACKSPACE_CHARACTER == c )
     {
         Cli_WriteCharacter( CLI_BACKSPACE_CHARACTER );
-        Cli_WriteCharacter( ' ' );
+        Cli_WriteCharacter( CLI_SPACE_CHARACTER );
         Cli_WriteCharacter( CLI_BACKSPACE_CHARACTER );
     }
     else
@@ -80,7 +72,7 @@ static void Cli_EchoCharacter( char c )
  */
 static char Cli_GetLastEntryFromRxBuffer( void )
 {
-    return g_tCli_Context.rx_buffer[g_tCli_Context.rx_size - 1];
+    return g_tCli_Config->acRxBuffer[g_tCli_Config->tRxBufferSize - 1];
 }
 
 
@@ -90,7 +82,7 @@ static char Cli_GetLastEntryFromRxBuffer( void )
  */
 static bool Cli_IsRxBufferFull( void )
 {
-    return ( g_tCli_Context.rx_size >= CLI_RX_BUFFER_SIZE );
+    return ( g_tCli_Config->tRxBufferSize >= CLI_RX_BUFFER_SIZE );
 }
 
 
@@ -99,8 +91,8 @@ static bool Cli_IsRxBufferFull( void )
  */
 static void Cli_ResetRxBuffer( void )
 {
-    memset( g_tCli_Context.rx_buffer, 0, sizeof( g_tCli_Context.rx_buffer ) );
-    g_tCli_Context.rx_size = 0;
+    memset( g_tCli_Config->acRxBuffer, 0, CLI_RX_BUFFER_SIZE );
+    g_tCli_Config->tRxBufferSize = 0;
 }
 
 
@@ -110,7 +102,7 @@ static void Cli_ResetRxBuffer( void )
  */
 static void Cli_EchoString( const char *str )
 {
-    for( const char *c = str; *c != '\0'; ++c )
+    for( const char *c = str; *c != CLI_NULL_TERMINATOR_CHARACTER; c++ )
     {
         Cli_EchoCharacter( *c );
     }
@@ -131,11 +123,11 @@ static void Cli_WritePrompt( void )
  * @param name Name of the command.
  * @return Pointer to the found command or NULL.
  */
-static const Cli_Binding_t *Cli_FindCommand( const char *name )
+static const Cli_Binding_t *Cli_FindCommand( const char *pcCommandName )
 {
     CLI_FOR_ALL_COMMANDS( command )
     {
-        if( strcmp( command->command, name ) == 0 )
+        if( strcmp( command->command, pcCommandName ) == 0 )
         {
             return command;
         }
@@ -164,13 +156,13 @@ static void Cli_ProcessRxBuffer( void )
 
     char *next_arg = NULL;
     for( size_t i = 0;
-         i < g_tCli_Context.rx_size && argc < CLI_MAX_NOF_ARGUMENTS; ++i )
+         i < g_tCli_Config->tRxBufferSize && argc < CLI_MAX_NOF_ARGUMENTS; ++i )
     {
-        char *const c = &g_tCli_Context.rx_buffer[i];
-        if( *c == ' ' || *c == CLI_NEWLINE_CHARACTER ||
-            i == g_tCli_Context.rx_size - 1 )
+        char *const c = &g_tCli_Config->acRxBuffer[i];
+        if( CLI_SPACE_CHARACTER == *c || CLI_NEWLINE_CHARACTER == *c ||
+            ( g_tCli_Config->tRxBufferSize - 1 ) == i )
         {
-            *c = '\0';
+            *c = CLI_NULL_TERMINATOR_CHARACTER;
             if( next_arg )
             {
                 argv[argc++] = next_arg;
@@ -183,7 +175,7 @@ static void Cli_ProcessRxBuffer( void )
         }
     }
 
-    if( g_tCli_Context.rx_size == CLI_RX_BUFFER_SIZE )
+    if( g_tCli_Config->tRxBufferSize == CLI_RX_BUFFER_SIZE )
     {
         Cli_EchoCharacter( CLI_NEWLINE_CHARACTER );
     }
@@ -196,11 +188,7 @@ static void Cli_ProcessRxBuffer( void )
             Cli_EchoString( "Unknown command: " );
             Cli_EchoString( argv[0] );
             Cli_EchoCharacter( CLI_NEWLINE_CHARACTER );
-            Cli_EchoString( "Type 'help' to list all commands\n" ); // String
-                                                                    // literals
-                                                                    // left
-                                                                    // as-is for
-                                                                    // now
+            Cli_EchoString( "Type 'help' to list all commands\n" );
         }
         else
         {
@@ -211,11 +199,11 @@ static void Cli_ProcessRxBuffer( void )
     Cli_WritePrompt();
 }
 
-void Cli_Initialize( const Cli_Config_t *impl )
+void Cli_Initialize( Cli_Config_t *impl )
 {
-    g_tCli_Context.send_char = impl->send_char;
+    g_tCli_Config = impl;
     Cli_ResetRxBuffer();
-    Cli_EchoString( "\n" CLI_PROMPT ); // String literals left as-is for now
+    Cli_EchoString( "\n" CLI_PROMPT );
 }
 
 void Cli_ReadAndProcessCharacter( char c )
@@ -229,14 +217,15 @@ void Cli_ReadAndProcessCharacter( char c )
 
     if( c == CLI_BACKSPACE_CHARACTER )
     {
-        if( g_tCli_Context.rx_size > 0 )
+        if( g_tCli_Config->tRxBufferSize > 0 )
         {
-            g_tCli_Context.rx_buffer[--g_tCli_Context.rx_size] = '\0';
+            g_tCli_Config->acRxBuffer[--g_tCli_Config->tRxBufferSize] =
+                CLI_NULL_TERMINATOR_CHARACTER;
         }
         return;
     }
 
-    g_tCli_Context.rx_buffer[g_tCli_Context.rx_size++] = c;
+    g_tCli_Config->acRxBuffer[g_tCli_Config->tRxBufferSize++] = c;
 
     Cli_ProcessRxBuffer();
 }
