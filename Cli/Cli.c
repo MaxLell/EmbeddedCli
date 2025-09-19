@@ -355,9 +355,6 @@ void CliBinding_HelpHandler( int argc, char *argv[] )
         CLI_ASSERT( g_tCli_Config->tNofBindings > 0 );
         CLI_ASSERT( true == g_tCli_Config->bIsInitialized );
     }
-
-    (void)argc;
-    (void)argv;
     Cli_Config_t *ptCfg = g_tCli_Config;
     Cli_EchoString( ptCfg, "\n" );
     for( size_t i = 0; i < g_tCli_Config->tNofBindings; ++i )
@@ -370,6 +367,10 @@ void CliBinding_HelpHandler( int argc, char *argv[] )
         Cli_EchoString( ptCfg, ptCmdBinding->pcHelperString );
         Cli_EchoCharacter( ptCfg, '\n' );
     }
+
+    (void)argc;
+    (void)argv;
+
     return;
 }
 
