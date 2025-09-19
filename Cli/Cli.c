@@ -5,7 +5,7 @@
 #include <string.h>
 
 #define CLI_MAX_NOF_ARGUMENTS         ( 16 )
-#define CLI_PROMPT                    "cli> "
+#define CLI_PROMPT                    "-------- \ncli> "
 #define CLI_NEWLINE_CHARACTER         '\n'
 #define CLI_CARRIAGE_RETURN_CHARACTER '\r'
 #define CLI_BACKSPACE_CHARACTER       '\b'
@@ -180,8 +180,8 @@ static void Cli_ProcessRxBuffer( void )
 
     if( argc >= 1 )
     {
-        const Cli_Binding_t *command = Cli_FindCommand( argv[0] );
-        if( !command )
+        const Cli_Binding_t *ptCmdBinding = Cli_FindCommand( argv[0] );
+        if( !ptCmdBinding )
         {
             Cli_EchoString( "Unknown command: " );
             Cli_EchoString( argv[0] );
@@ -190,16 +190,17 @@ static void Cli_ProcessRxBuffer( void )
         }
         else
         {
-            command->handler( argc, argv );
+            ptCmdBinding->handler( argc, argv );
         }
     }
     Cli_ResetRxBuffer();
     Cli_WritePrompt();
 }
 
-void Cli_Initialize( Cli_Config_t *impl )
+void Cli_Initialize( Cli_Config_t *in_ptCfg )
 {
-    g_tCli_Config = impl;
+    g_tCli_Config = in_ptCfg;
+    g_tCli_Config->bIsInitialized = true;
     Cli_ResetRxBuffer();
     Cli_EchoString( "\n" CLI_PROMPT );
 }
@@ -231,7 +232,6 @@ void Cli_ReadAndProcessCharacter( char c )
 void Cli_WriteString( const char *str )
 {
     Cli_EchoString( str );
-    Cli_EchoCharacter( CLI_NEWLINE_CHARACTER );
 }
 
 int CliBinding_HelpHandler( int argc, char *argv[] )

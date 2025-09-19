@@ -25,6 +25,7 @@ int CliBinding_KvWrite( int argc, char *argv[] )
     if( argc != 3 )
     {
         Cli_WriteString( "> FAIL,1" );
+        Cli_WriteString( "\n" );
         return -1;
     }
 
@@ -35,14 +36,17 @@ int CliBinding_KvWrite( int argc, char *argv[] )
     if( !result )
     {
         Cli_WriteString( "> FAIL,2" );
+        Cli_WriteString( "\n" );
         return -1;
     }
     Cli_WriteString( "> OK" );
+    Cli_WriteString( "\n" );
     return 0;
 }
 
 int CliBinding_HelloWorld( int argc, char *argv[] )
 {
     Cli_WriteString( "Hello World!" );
+    Cli_WriteString( "\n" );
     return 0;
 }
