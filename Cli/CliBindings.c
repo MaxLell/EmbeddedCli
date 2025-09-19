@@ -46,3 +46,13 @@ int CliBinding_HelloWorld( int argc, char *argv[] )
     Cli_WriteString( CLI_OK_PROMPT "Hello World!" );
     return 0;
 }
+
+int Cli_DisplayArgs( int argc, char *argv[] )
+{
+    int i;
+    for( i = 0; i < argc; i++ )
+    {
+        printf( "argv[%d]=\"%s\"\n", i, argv[i] );
+    }
+    return 0;
+}
