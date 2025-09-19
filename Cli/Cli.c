@@ -5,14 +5,8 @@
 #include <stddef.h>
 #include <string.h>
 
-#define CLI_MAX_NOF_ARGUMENTS         ( 16 )
-#define CLI_PROMPT                    "-------- \n> "
-#define CLI_NEWLINE_CHARACTER         '\n'
-#define CLI_CARRIAGE_RETURN_CHARACTER '\r'
-#define CLI_BACKSPACE_CHARACTER       '\b'
-#define CLI_NULL_TERMINATOR_CHARACTER '\0'
-#define CLI_SPACE_CHARACTER           ' '
-
+#define CLI_MAX_NOF_ARGUMENTS ( 16 )
+#define CLI_PROMPT            "-------- \n> "
 
 static Cli_Config_t *g_tCli_Config = NULL;
 
@@ -44,16 +38,16 @@ static void Cli_WriteCharacter( char c )
 static void Cli_EchoCharacter( char c )
 {
     assert( Cli_IsInitialized() );
-    if( CLI_NEWLINE_CHARACTER == c ) // User pressed Enter
+    if( '\n' == c ) // User pressed Enter
     {
-        Cli_WriteCharacter( CLI_CARRIAGE_RETURN_CHARACTER );
-        Cli_WriteCharacter( CLI_NEWLINE_CHARACTER );
+        Cli_WriteCharacter( '\r' );
+        Cli_WriteCharacter( '\n' );
     }
-    else if( CLI_BACKSPACE_CHARACTER == c ) // User pressed Backspace
+    else if( '\b' == c ) // User pressed Backspace
     {
-        Cli_WriteCharacter( CLI_BACKSPACE_CHARACTER );
-        Cli_WriteCharacter( CLI_SPACE_CHARACTER );
-        Cli_WriteCharacter( CLI_BACKSPACE_CHARACTER );
+        Cli_WriteCharacter( '\b' );
+        Cli_WriteCharacter( ' ' );
+        Cli_WriteCharacter( '\b' );
     }
     else // Every other character
     {
@@ -102,7 +96,7 @@ static void Cli_ResetRxBuffer( void )
 static void Cli_EchoString( const char *str )
 {
     assert( Cli_IsInitialized() );
-    for( const char *c = str; *c != CLI_NULL_TERMINATOR_CHARACTER; c++ )
+    for( const char *c = str; *c != '\0'; c++ )
     {
         Cli_EchoCharacter( *c );
     }
@@ -156,35 +150,32 @@ void Cli_Initialize( Cli_Config_t *in_ptCfg )
     Cli_EchoString( CLI_PROMPT );
 }
 
-void Cli_AddCharacter( char c )
+void Cli_AddCharacter( char in_cChar )
 {
     assert( Cli_IsInitialized() );
-    if( c == CLI_CARRIAGE_RETURN_CHARACTER || Cli_IsRxBufferFull() ||
-        !Cli_IsInitialized() )
+    if( in_cChar == '\r' || Cli_IsRxBufferFull() || !Cli_IsInitialized() )
     {
         return;
     }
     // Cli_EchoCharacter( c );
 
-    if( c == CLI_BACKSPACE_CHARACTER )
+    if( in_cChar == '\b' )
     {
         if( g_tCli_Config->tRxBufferSize > 0 )
         {
-            g_tCli_Config->acRxByteBuffer[--g_tCli_Config->tRxBufferSize] =
-                CLI_NULL_TERMINATOR_CHARACTER;
+            g_tCli_Config->acRxByteBuffer[--g_tCli_Config->tRxBufferSize] = '\0';
         }
         return;
     }
 
-    g_tCli_Config->acRxByteBuffer[g_tCli_Config->tRxBufferSize++] = c;
+    g_tCli_Config->acRxByteBuffer[g_tCli_Config->tRxBufferSize++] = in_cChar;
 }
 
 void Cli_Process( void )
 {
     assert( Cli_IsInitialized() );
 
-    if( Cli_GetLastEntryFromRxBuffer() != CLI_NEWLINE_CHARACTER &&
-        !Cli_IsRxBufferFull() )
+    if( Cli_GetLastEntryFromRxBuffer() != '\n' && !Cli_IsRxBufferFull() )
     {
         return;
     }
@@ -197,10 +188,9 @@ void Cli_Process( void )
          i < g_tCli_Config->tRxBufferSize && argc < CLI_MAX_NOF_ARGUMENTS; ++i )
     {
         char *const c = &g_tCli_Config->acRxByteBuffer[i];
-        if( CLI_SPACE_CHARACTER == *c || CLI_NEWLINE_CHARACTER == *c ||
-            ( g_tCli_Config->tRxBufferSize - 1 ) == i )
+        if( ' ' == *c || '\n' == *c || ( g_tCli_Config->tRxBufferSize - 1 ) == i )
         {
-            *c = CLI_NULL_TERMINATOR_CHARACTER;
+            *c = '\0';
             if( next_arg )
             {
                 argv[argc++] = next_arg;
@@ -215,7 +205,7 @@ void Cli_Process( void )
 
     if( g_tCli_Config->tRxBufferSize == CLI_RX_BUFFER_SIZE )
     {
-        Cli_EchoCharacter( CLI_NEWLINE_CHARACTER );
+        Cli_EchoCharacter( '\n' );
     }
 
     if( argc >= 1 )
@@ -223,14 +213,14 @@ void Cli_Process( void )
         const Cli_Binding_t *ptCmdBinding = Cli_FindCommand( argv[0] );
         if( !ptCmdBinding )
         {
-            Cli_EchoString( CLI_FAIL_PROMPT "Unknown pcCmdName: " );
+            Cli_EchoString( CLI_FAIL_PROMPT "Unknown command: " );
             Cli_EchoString( argv[0] );
-            Cli_EchoCharacter( CLI_NEWLINE_CHARACTER );
+            Cli_EchoCharacter( '\n' );
             Cli_EchoString( "Type 'help' to list all commands\n" );
         }
         else
         {
-            ptCmdBinding->handler( argc, argv );
+            ptCmdBinding->pFnCmdHandler( argc, argv );
         }
     }
     Cli_ResetRxBuffer();
@@ -241,7 +231,7 @@ void Cli_WriteString( const char *str )
 {
     assert( Cli_IsInitialized() );
     Cli_EchoString( str );
-    Cli_EchoCharacter( CLI_NEWLINE_CHARACTER );
+    Cli_EchoCharacter( '\n' );
 }
 
 int CliBinding_HelpHandler( int argc, char *argv[] )
@@ -256,8 +246,8 @@ int CliBinding_HelpHandler( int argc, char *argv[] )
         Cli_EchoString( "* " );
         Cli_EchoString( ptCmdBinding->pcCmdName );
         Cli_EchoString( ": \n              " );
-        Cli_EchoString( ptCmdBinding->help );
-        Cli_EchoCharacter( CLI_NEWLINE_CHARACTER );
+        Cli_EchoString( ptCmdBinding->pcHelperString );
+        Cli_EchoCharacter( '\n' );
     }
     return 0;
 }

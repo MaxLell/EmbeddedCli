@@ -10,8 +10,8 @@
 typedef struct
 {
     const char *pcCmdName;
-    void ( *handler )( int argc, char *argv[] );
-    const char *help;
+    void ( *pFnCmdHandler )( int argc, char *argv[] );
+    const char *pcHelperString;
 } Cli_Binding_t;
 
 typedef struct
