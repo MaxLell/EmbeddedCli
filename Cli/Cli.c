@@ -124,7 +124,7 @@ static const Cli_Binding_t *Cli_FindCommand( const char *pcCommandName )
     for( size_t i = 0; i < g_tCli_Config->tNofBindings; ++i )
     {
         const Cli_Binding_t *ptBinding = &g_tCli_Config->atCliCmdBindingsBuffer[i];
-        if( strcmp( ptBinding->pcCmdName, pcCommandName ) == 0 )
+        if( 0 == strcmp( ptBinding->pcCmdName, pcCommandName ) )
         {
             return ptBinding;
         }
@@ -153,13 +153,12 @@ void Cli_Initialize( Cli_Config_t *in_ptCfg )
 void Cli_AddCharacter( char in_cChar )
 {
     assert( Cli_IsInitialized() );
-    if( in_cChar == '\r' || Cli_IsRxBufferFull() || !Cli_IsInitialized() )
+    if( '\r' == in_cChar || Cli_IsRxBufferFull() || !Cli_IsInitialized() )
     {
         return;
     }
-    // Cli_EchoCharacter( c );
 
-    if( in_cChar == '\b' )
+    if( '\b' == in_cChar )
     {
         if( g_tCli_Config->tRxBufferSize > 0 )
         {
@@ -169,6 +168,14 @@ void Cli_AddCharacter( char in_cChar )
     }
 
     g_tCli_Config->acRxByteBuffer[g_tCli_Config->tRxBufferSize++] = in_cChar;
+}
+
+void Cli_HandleUnknownCommand( char *pcCmdName )
+{
+    Cli_EchoString( CLI_FAIL_PROMPT "Unknown command: " );
+    Cli_EchoString( pcCmdName );
+    Cli_EchoCharacter( '\n' );
+    Cli_EchoString( "Type 'help' to list all commands\n" );
 }
 
 void Cli_Process( void )
@@ -203,7 +210,7 @@ void Cli_Process( void )
         }
     }
 
-    if( g_tCli_Config->tRxBufferSize == CLI_RX_BUFFER_SIZE )
+    if( CLI_RX_BUFFER_SIZE == g_tCli_Config->tRxBufferSize )
     {
         Cli_EchoCharacter( '\n' );
     }
@@ -213,10 +220,7 @@ void Cli_Process( void )
         const Cli_Binding_t *ptCmdBinding = Cli_FindCommand( argv[0] );
         if( !ptCmdBinding )
         {
-            Cli_EchoString( CLI_FAIL_PROMPT "Unknown command: " );
-            Cli_EchoString( argv[0] );
-            Cli_EchoCharacter( '\n' );
-            Cli_EchoString( "Type 'help' to list all commands\n" );
+            Cli_HandleUnknownCommand( argv[0] );
         }
         else
         {
