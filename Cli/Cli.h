@@ -18,7 +18,7 @@ typedef struct
 {
     int ( *pFnWriteCharacter )( char c );
     bool           bIsInitialized;
-    size_t         tRxBufferSize;
+    size_t         tCurrentRxBufferSize;
     char          *acRxByteBuffer;
     Cli_Binding_t *atCliCmdBindingsBuffer;
     size_t         tNofBindings;

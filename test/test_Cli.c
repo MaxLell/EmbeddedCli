@@ -12,7 +12,7 @@ void test_Cli_Initialize_sets_initialized_flag( void )
     Cli_Config_t cfg = { .pFnWriteCharacter = NULL,
                          .bIsInitialized = false,
                          .acRxByteBuffer = rxBuffer,
-                         .tRxBufferSize = CLI_RX_BUFFER_SIZE };
+                         .tCurrentRxBufferSize = CLI_RX_BUFFER_SIZE };
     Cli_Initialize( &cfg );
 
     TEST_ASSERT_TRUE( cfg.bIsInitialized );
@@ -30,13 +30,14 @@ void test_Cli_Initialize_sets_initialized_flag( void )
 //     Cli_Config_t cfg = { .pFnWriteCharacter = echo_func,
 //                          .bIsInitialized = false,
 //                          .acRxByteBuffer = rxBuffer,
-//                          .tRxBufferSize = CLI_RX_BUFFER_SIZE };
+//                          .tCurrentRxBufferSize = CLI_RX_BUFFER_SIZE };
 //     Cli_Initialize( &cfg );
 //     for( int i = 0; i < CLI_RX_BUFFER_SIZE + 10; ++i )
 //     {
 //         Cli_AddCharacter( 'B' );
 //     }
-//     TEST_ASSERT_LESS_OR_EQUAL( CLI_RX_BUFFER_SIZE, cfg.tRxBufferSize );
+//     TEST_ASSERT_LESS_OR_EQUAL( CLI_RX_BUFFER_SIZE, cfg.tCurrentRxBufferSize
+//     );
 // }
 
 // void test_Cli_ProcessRxBuffer_executes_command( void )

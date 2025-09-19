@@ -99,7 +99,7 @@ static char Cli_GetLastEntryFromRxBuffer( Cli_Config_t *ptCfg )
         CLI_ASSERT( g_tCli_Config == ptCfg );
         CLI_ASSERT( true == ptCfg->bIsInitialized );
     }
-    return ptCfg->acRxByteBuffer[g_tCli_Config->tRxBufferSize - 1];
+    return ptCfg->acRxByteBuffer[g_tCli_Config->tCurrentRxBufferSize - 1];
 }
 
 
@@ -115,7 +115,7 @@ static bool Cli_IsRxBufferFull( Cli_Config_t *ptCfg )
         CLI_ASSERT( g_tCli_Config == ptCfg );
         CLI_ASSERT( true == ptCfg->bIsInitialized );
     }
-    return ( ptCfg->tRxBufferSize >= CLI_MAX_RX_BUFFER_SIZE );
+    return ( ptCfg->tCurrentRxBufferSize >= CLI_MAX_RX_BUFFER_SIZE );
 }
 
 
@@ -131,7 +131,7 @@ static void Cli_ResetRxBuffer( Cli_Config_t *ptCfg )
         CLI_ASSERT( true == ptCfg->bIsInitialized );
     }
     memset( ptCfg->acRxByteBuffer, 0, CLI_MAX_RX_BUFFER_SIZE );
-    ptCfg->tRxBufferSize = 0;
+    ptCfg->tCurrentRxBufferSize = 0;
 }
 
 
@@ -206,6 +206,7 @@ void Cli_Initialize( Cli_Config_t *in_ptCfg )
     { // Input Checks
         CLI_ASSERT( in_ptCfg );
         CLI_ASSERT( in_ptCfg->acRxByteBuffer );
+        CLI_ASSERT( 0 == in_ptCfg->tCurrentRxBufferSize );
         CLI_ASSERT( in_ptCfg->atCliCmdBindingsBuffer );
         CLI_ASSERT( in_ptCfg->pFnWriteCharacter );
         CLI_ASSERT( false == in_ptCfg->bIsInitialized );
@@ -243,19 +244,19 @@ void Cli_AddCharacter( Cli_Config_t *ptCfg, char in_cChar )
 
     if( '\b' == in_cChar )
     {
-        if( ptCfg->tRxBufferSize > 0 )
+        if( ptCfg->tCurrentRxBufferSize > 0 )
         {
-            ptCfg->tRxBufferSize--;
-            size_t idx = ptCfg->tRxBufferSize;
+            ptCfg->tCurrentRxBufferSize--;
+            size_t idx = ptCfg->tCurrentRxBufferSize;
             ptCfg->acRxByteBuffer[idx] = '\0';
         }
         return;
     }
 
-    size_t idx = ptCfg->tRxBufferSize;
+    size_t idx = ptCfg->tCurrentRxBufferSize;
     ptCfg->acRxByteBuffer[idx] = in_cChar;
-    ptCfg->tRxBufferSize++;
-    CLI_ASSERT( ptCfg->tRxBufferSize < CLI_MAX_RX_BUFFER_SIZE );
+    ptCfg->tCurrentRxBufferSize++;
+    CLI_ASSERT( ptCfg->tCurrentRxBufferSize < CLI_MAX_RX_BUFFER_SIZE );
 }
 
 void Cli_HandleUnknownCommand( Cli_Config_t     *ptCfg,
@@ -277,6 +278,10 @@ void Cli_HandleUnknownCommand( Cli_Config_t     *ptCfg,
 
 void Cli_Process( Cli_Config_t *ptCfg )
 {
+    char *acArguments[CLI_MAX_NOF_ARGUMENTS] = { 0 };
+    int   s32NofArguments = 0;
+    char *next_arg = NULL;
+
     { // Input Checks
         CLI_ASSERT( ptCfg );
         CLI_ASSERT( ptCfg->acRxByteBuffer );
@@ -290,15 +295,16 @@ void Cli_Process( Cli_Config_t *ptCfg )
         return;
     }
 
-    char *acArguments[CLI_MAX_NOF_ARGUMENTS] = { 0 };
-    int   s32NofArguments = 0;
-
-    char *next_arg = NULL;
-    for( size_t i = 0;
-         i < ptCfg->tRxBufferSize && s32NofArguments < CLI_MAX_NOF_ARGUMENTS; ++i )
+    for( size_t i = 0; i < ptCfg->tCurrentRxBufferSize; i++ )
     {
+        if( s32NofArguments >= CLI_MAX_NOF_ARGUMENTS )
+        {
+            Cli_EchoString( ptCfg, "Too many arguments \n" );
+            break;
+        }
+
         char *const c = &ptCfg->acRxByteBuffer[i];
-        if( ' ' == *c || '\n' == *c || ( ptCfg->tRxBufferSize - 1 ) == i )
+        if( ' ' == *c || '\n' == *c || ( ptCfg->tCurrentRxBufferSize - 1 ) == i )
         {
             *c = '\0';
             if( next_arg )
@@ -315,7 +321,7 @@ void Cli_Process( Cli_Config_t *ptCfg )
         }
     }
 
-    if( CLI_MAX_RX_BUFFER_SIZE == ptCfg->tRxBufferSize )
+    if( CLI_MAX_RX_BUFFER_SIZE == ptCfg->tCurrentRxBufferSize )
     {
         Cli_EchoCharacter( ptCfg, '\n' );
     }

@@ -16,7 +16,7 @@ void Cli_EchoString( int argc, char *argv[] )
 {
     if( argc != 2 )
     {
-        printf( "%sToo few arguments given\n", CLI_FAIL_PROMPT );
+        printf( "%sGive one argument\n", CLI_FAIL_PROMPT );
         return;
     }
     printf( "%s\"%s\"\n", CLI_OK_PROMPT, argv[1] );
