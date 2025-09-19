@@ -24,8 +24,7 @@ int CliBinding_KvWrite( int argc, char *argv[] )
     // 3. Value
     if( argc != 3 )
     {
-        Cli_WriteString( "> FAIL,1" );
-        Cli_WriteString( "\n" );
+        Cli_WriteString( CLI_FAIL_PROMPT "Too few arguments given" );
         return -1;
     }
 
@@ -35,18 +34,15 @@ int CliBinding_KvWrite( int argc, char *argv[] )
     bool result = kv_store_write( key, value, strlen( value ) );
     if( !result )
     {
-        Cli_WriteString( "> FAIL,2" );
-        Cli_WriteString( "\n" );
+        Cli_WriteString( CLI_FAIL_PROMPT );
         return -1;
     }
-    Cli_WriteString( "> OK" );
-    Cli_WriteString( "\n" );
+    Cli_WriteString( CLI_OK_PROMPT );
     return 0;
 }
 
 int CliBinding_HelloWorld( int argc, char *argv[] )
 {
-    Cli_WriteString( "Hello World!" );
-    Cli_WriteString( "\n" );
+    Cli_WriteString( CLI_OK_PROMPT "Hello World!" );
     return 0;
 }

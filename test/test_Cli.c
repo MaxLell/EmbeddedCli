@@ -18,26 +18,6 @@ void test_Cli_Initialize_sets_initialized_flag( void )
     TEST_ASSERT_TRUE( cfg.bIsInitialized );
 }
 
-int echo_called = 0;
-int echo_func( char c )
-{
-    echo_called++;
-    return c;
-}
-
-void test_Cli_ReadAndProcessCharacter_echoes_character( void )
-{
-    char rxBuffer[CLI_RX_BUFFER_SIZE] = { 0 };
-
-    Cli_Config_t cfg = { .pFnWriteCharacter = echo_func,
-                         .bIsInitialized = false,
-                         .acRxBuffer = rxBuffer,
-                         .tRxBufferSize = CLI_RX_BUFFER_SIZE };
-    Cli_Initialize( &cfg );
-    Cli_ReadAndProcessCharacter( 'A' );
-    TEST_ASSERT_EQUAL_INT( 1, echo_called );
-}
-
 // void test_Cli_Buffer_overflow_is_prevented( void )
 // {
 //     char rxBuffer[CLI_RX_BUFFER_SIZE] = { 0 };
@@ -54,7 +34,7 @@ void test_Cli_ReadAndProcessCharacter_echoes_character( void )
 //     Cli_Initialize( &cfg );
 //     for( int i = 0; i < CLI_RX_BUFFER_SIZE + 10; ++i )
 //     {
-//         Cli_ReadAndProcessCharacter( 'B' );
+//         Cli_AddCharToRxBuffer( 'B' );
 //     }
 //     TEST_ASSERT_LESS_OR_EQUAL( CLI_RX_BUFFER_SIZE, cfg.tRxBufferSize );
 // }

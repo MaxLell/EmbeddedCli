@@ -4,6 +4,8 @@
 #include <stddef.h>
 
 #define CLI_RX_BUFFER_SIZE ( 256 )
+#define CLI_FAIL_PROMPT    "> [FAIL]; "
+#define CLI_OK_PROMPT      "> [OK];   "
 
 typedef struct
 {
@@ -25,6 +27,8 @@ typedef struct
 
 void Cli_Initialize( Cli_Config_t *impl );
 
-void Cli_ReadAndProcessCharacter( char c );
+void Cli_AddCharToRxBuffer( char c );
+
+void Cli_ProcessRxBuffer();
 
 void Cli_WriteString( const char *str );

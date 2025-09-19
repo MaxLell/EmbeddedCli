@@ -43,7 +43,8 @@ int main( void )
     while( true )
     {
         char c = console_getc();
-        Cli_ReadAndProcessCharacter( c );
+        Cli_AddCharToRxBuffer( c );
+        Cli_ProcessRxBuffer();
     }
     return 0;
 }
