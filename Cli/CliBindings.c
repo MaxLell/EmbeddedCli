@@ -8,6 +8,8 @@
 
 void CliBinding_HelloWorld( int argc, char *argv[] )
 {
+    (void)argc;
+    (void)argv;
     printf( "%sHello World!\n", CLI_OK_PROMPT );
     return;
 }
@@ -19,6 +21,7 @@ void Cli_EchoString( int argc, char *argv[] )
         printf( "%sGive one argument\n", CLI_FAIL_PROMPT );
         return;
     }
+    (void)argv;
     printf( "%s\"%s\"\n", CLI_OK_PROMPT, argv[1] );
     return;
 }
@@ -35,6 +38,8 @@ void Cli_DisplayArgs( int argc, char *argv[] )
 
 void Cli_ClearScreen( int argc, char *argv[] )
 {
+    (void)argc;
+    (void)argv;
     // ANSI escape code to clear screen and move cursor to home
     printf( "\033[2J\033[H" );
     return;

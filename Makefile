@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -g -O0 -Wall -ICli
+CFLAGS = -g -O0 -Wall -Wextra -Wno-unused-parameter -pedantic -Werror -ICli
 SRC = main.c Cli/Cli.c Cli/CliBindings.c
 BUILD_DIR = build
 OBJ = $(BUILD_DIR)/main.o $(BUILD_DIR)/Cli.o $(BUILD_DIR)/CliBindings.o
