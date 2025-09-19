@@ -1,8 +1,10 @@
 - Wie funktioniert das mit putchar? - das wird wirklich mit jedem aktualisiert
-- Vereinfache den Code
 - Entferne die Globalen Variablen aus dem Code - Es muss jeweils der Struct übergeben werden
 - Schreibe Unit Tests
 - Füge überall noch Asserts ein
+- Ich kann auch noch den 'help' output sortieren - also von a - z
+- Ich könnte auch noch die Funktionen dynamisch hinzufügen lassen
+- Autocompletion wäre auch noch sehr praktisch.
 
 
 # Zukünftige Arbeitspakete
