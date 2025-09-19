@@ -121,8 +121,9 @@ static void Cli_WritePrompt( void )
  */
 static const Cli_Binding_t *Cli_FindCommand( const char *pcCommandName )
 {
-    for( const Cli_Binding_t *command = g_shell_commands;
-         command < &g_shell_commands[g_num_shell_commands]; command++ )
+    for( const Cli_Binding_t *command = g_tCli_Config->atBindings;
+         command < &g_tCli_Config->atBindings[g_tCli_Config->tNofBindings];
+         command++ )
     {
         if( strcmp( command->command, pcCommandName ) == 0 )
         {
@@ -235,8 +236,9 @@ void Cli_WriteString( const char *str )
 
 int CliBinding_HelpHandler( int argc, char *argv[] )
 {
-    for( const Cli_Binding_t *command = g_shell_commands;
-         command < &g_shell_commands[g_num_shell_commands]; command++ )
+    for( const Cli_Binding_t *command = g_tCli_Config->atBindings;
+         command < &g_tCli_Config->atBindings[g_tCli_Config->tNofBindings];
+         command++ )
     {
         Cli_EchoString( command->command );
         Cli_EchoString( ": " );

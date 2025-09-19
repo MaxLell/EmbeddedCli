@@ -46,12 +46,3 @@ int CliBinding_HelloWorld( int argc, char *argv[] )
     Cli_WriteString( "Hello World!" );
     return 0;
 }
-
-static const Cli_Binding_t s_shell_commands[] = {
-    { "kv_write", CliBinding_KvWrite, "Write a Key/Value pair" },
-    { "hello", CliBinding_HelloWorld, "Say hello" },
-    { "help", CliBinding_HelpHandler, "Lists all commands" },
-};
-
-const Cli_Binding_t *const g_shell_commands = s_shell_commands;
-const size_t g_num_shell_commands = ARRAY_SIZE( s_shell_commands );
