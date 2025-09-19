@@ -44,18 +44,18 @@ static void Cli_WriteCharacter( char c )
 static void Cli_EchoCharacter( char c )
 {
     assert( Cli_IsInitialized() );
-    if( CLI_NEWLINE_CHARACTER == c )
+    if( CLI_NEWLINE_CHARACTER == c ) // User pressed Enter
     {
         Cli_WriteCharacter( CLI_CARRIAGE_RETURN_CHARACTER );
         Cli_WriteCharacter( CLI_NEWLINE_CHARACTER );
     }
-    else if( CLI_BACKSPACE_CHARACTER == c )
+    else if( CLI_BACKSPACE_CHARACTER == c ) // User pressed Backspace
     {
         Cli_WriteCharacter( CLI_BACKSPACE_CHARACTER );
-        // Cli_WriteCharacter( CLI_SPACE_CHARACTER );
-        // Cli_WriteCharacter( CLI_BACKSPACE_CHARACTER );
+        Cli_WriteCharacter( CLI_SPACE_CHARACTER );
+        Cli_WriteCharacter( CLI_BACKSPACE_CHARACTER );
     }
-    else
+    else // Every other character
     {
         Cli_WriteCharacter( c );
     }
