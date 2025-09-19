@@ -16,8 +16,8 @@ typedef struct
 
 typedef struct
 {
-    bool bIsInitialized;
     int ( *pFnWriteCharacter )( char c );
+    bool           bIsInitialized;
     size_t         tRxBufferSize;
     char          *acRxBuffer;
     Cli_Binding_t *atBindings;
@@ -25,7 +25,7 @@ typedef struct
 } Cli_Config_t;
 
 
-void Cli_Initialize( Cli_Config_t *impl );
+void Cli_Initialize( Cli_Config_t *ptCfg );
 
 void Cli_AddCharToRxBuffer( char c );
 

@@ -1,0 +1,5 @@
+- Wie funktioniert das mit putchar?
+- Vereinfache den Code
+- Entferne die Globalen Variablen aus dem Code - Es muss jeweils der Struct übergeben werden
+- Schreibe Unit Tests
+- Füge überall noch Asserts ein
