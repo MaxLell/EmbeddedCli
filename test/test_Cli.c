@@ -11,7 +11,7 @@ void test_Cli_Initialize_sets_initialized_flag( void )
     char         rxBuffer[CLI_RX_BUFFER_SIZE] = { 0 };
     Cli_Config_t cfg = { .pFnWriteCharacter = NULL,
                          .bIsInitialized = false,
-                         .acRxBuffer = rxBuffer,
+                         .acRxByteBuffer = rxBuffer,
                          .tRxBufferSize = CLI_RX_BUFFER_SIZE };
     Cli_Initialize( &cfg );
 
@@ -29,7 +29,7 @@ void test_Cli_Initialize_sets_initialized_flag( void )
 //     }
 //     Cli_Config_t cfg = { .pFnWriteCharacter = echo_func,
 //                          .bIsInitialized = false,
-//                          .acRxBuffer = rxBuffer,
+//                          .acRxByteBuffer = rxBuffer,
 //                          .tRxBufferSize = CLI_RX_BUFFER_SIZE };
 //     Cli_Initialize( &cfg );
 //     for( int i = 0; i < CLI_RX_BUFFER_SIZE + 10; ++i )

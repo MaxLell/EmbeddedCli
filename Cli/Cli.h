@@ -19,8 +19,8 @@ typedef struct
     int ( *pFnWriteCharacter )( char c );
     bool           bIsInitialized;
     size_t         tRxBufferSize;
-    char          *acRxBuffer;
-    Cli_Binding_t *atBindings;
+    char          *acRxByteBuffer;
+    Cli_Binding_t *atCliCmdBindingsBuffer;
     size_t         tNofBindings;
 } Cli_Config_t;
 
@@ -30,5 +30,3 @@ void Cli_Initialize( Cli_Config_t *ptCfg );
 void Cli_AddCharToRxBuffer( char c );
 
 void Cli_ProcessRxBuffer();
-
-void Cli_WriteString( const char *str );

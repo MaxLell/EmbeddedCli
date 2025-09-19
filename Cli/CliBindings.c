@@ -24,7 +24,7 @@ int CliBinding_KvWrite( int argc, char *argv[] )
     // 3. Value
     if( argc != 3 )
     {
-        Cli_WriteString( CLI_FAIL_PROMPT "Too few arguments given" );
+        printf( "%sToo few arguments given\n", CLI_FAIL_PROMPT );
         return -1;
     }
 
@@ -34,16 +34,27 @@ int CliBinding_KvWrite( int argc, char *argv[] )
     bool result = kv_store_write( key, value, strlen( value ) );
     if( !result )
     {
-        Cli_WriteString( CLI_FAIL_PROMPT );
+        printf( "%s\n", CLI_FAIL_PROMPT );
         return -1;
     }
-    Cli_WriteString( CLI_OK_PROMPT );
+    printf( "%s\n", CLI_OK_PROMPT );
     return 0;
 }
 
 int CliBinding_HelloWorld( int argc, char *argv[] )
 {
-    Cli_WriteString( CLI_OK_PROMPT "Hello World!" );
+    printf( "%sHello World!\n", CLI_OK_PROMPT );
+    return 0;
+}
+
+int CLi_EchoString( int argc, char *argv[] )
+{
+    if( argc != 2 )
+    {
+        printf( "%sToo few arguments given\n", CLI_FAIL_PROMPT );
+        return -1;
+    }
+    printf( "%s\"%s\"\n", CLI_OK_PROMPT, argv[1] );
     return 0;
 }
 
@@ -52,7 +63,7 @@ int Cli_DisplayArgs( int argc, char *argv[] )
     int i;
     for( i = 0; i < argc; i++ )
     {
-        printf( "argv[%d]=\"%s\"\n", i, argv[i] );
+        printf( "argv[%d] --> \"%s\" \n", i, argv[i] );
     }
     return 0;
 }
@@ -60,6 +71,6 @@ int Cli_DisplayArgs( int argc, char *argv[] )
 int Cli_ClearScreen( int argc, char *argv[] )
 {
     // ANSI escape code to clear screen and move cursor to home
-    Cli_WriteString( "\033[2J\033[H" );
+    printf( "\033[2J\033[H" );
     return 0;
 }

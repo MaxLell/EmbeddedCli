@@ -1,5 +1,26 @@
-- Wie funktioniert das mit putchar?
+- Wie funktioniert das mit putchar? - das wird wirklich mit jedem aktualisiert
 - Vereinfache den Code
 - Entferne die Globalen Variablen aus dem Code - Es muss jeweils der Struct übergeben werden
 - Schreibe Unit Tests
 - Füge überall noch Asserts ein
+
+
+# Zukünftige Arbeitspakete
+- Ich will hier auch einen Tree bauen können - also zum Beispiel
+```
+help
+* test
+        enter 'help test' to display all available tests
+* datamodel
+        enter 'help datamodel' to display all available datamodel nodes
+...
+```
+
+```
+help test
+* led on
+        enables the blinky led on PA5
+* led off
+        disables the blinky led
+...
+```

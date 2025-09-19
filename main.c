@@ -12,6 +12,7 @@ extern int CliBinding_HelloWorld( int argc, char *argv[] );
 extern int CliBinding_HelpHandler( int argc, char *argv[] );
 extern int Cli_DisplayArgs( int argc, char *argv[] );
 extern int Cli_ClearScreen( int argc, char *argv[] );
+extern int CLi_EchoString( int argc, char *argv[] );
 
 int console_putc( char c )
 {
@@ -25,7 +26,7 @@ char console_getc( void )
 
 int main( void )
 {
-    static char acRxBuffer[CLI_RX_BUFFER_SIZE] = { 0 };
+    static char acRxByteBuffer[CLI_RX_BUFFER_SIZE] = { 0 };
 
     Cli_Binding_t atCliBindings[] = {
         { "kv_write", CliBinding_KvWrite, "Write a Key/Value pair" },
@@ -33,13 +34,14 @@ int main( void )
         { "help", CliBinding_HelpHandler, "Lists all commands" },
         { "display_args", Cli_DisplayArgs, "Displays the given cli arguments" },
         { "clear", Cli_ClearScreen, "Clears the screen" },
+        { "echo", CLi_EchoString, "Echoes the given string" },
     };
 
     Cli_Config_t tCliCfg = { .pFnWriteCharacter = console_putc,
                              .bIsInitialized = false,
-                             .acRxBuffer = acRxBuffer,
+                             .acRxByteBuffer = acRxByteBuffer,
                              .tRxBufferSize = CLI_RX_BUFFER_SIZE,
-                             .atBindings = atCliBindings,
+                             .atCliCmdBindingsBuffer = atCliBindings,
                              .tNofBindings = ARRAY_SIZE( atCliBindings ) };
 
     Cli_Initialize( &tCliCfg );
