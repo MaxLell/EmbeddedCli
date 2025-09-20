@@ -20,7 +20,7 @@ typedef struct
     uint32_t u32CfgCanaryStart;
     int ( *pFnWriteCharacter )( char c );
     bool           bIsInitialized;
-    size_t         tCurrentRxBufferSize;
+    size_t         tNofStoredCharacters;
     char           acRxByteBuffer[CLI_MAX_RX_BUFFER_SIZE];
     uint32_t       u32BufferCanary;
     Cli_Binding_t *atCliCmdBindingsBuffer;
@@ -35,4 +35,4 @@ void Cli_AddCharacter( Cli_Config_t *ptCfg, char c );
 
 void Cli_Process( Cli_Config_t *ptCfg );
 
-void Cli_WriteString( const char *in_pcString );
+void Cli_Print( const char *fmt, ... );

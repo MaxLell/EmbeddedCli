@@ -1,5 +1,6 @@
 #include "Cli.h"
 
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -92,7 +93,7 @@ static char Cli_GetLastEntryFromRxBuffer()
         CLI_ASSERT( g_tCli_Config->acRxByteBuffer );
         CLI_ASSERT( true == g_tCli_Config->bIsInitialized );
     }
-    return g_tCli_Config->acRxByteBuffer[g_tCli_Config->tCurrentRxBufferSize - 1];
+    return g_tCli_Config->acRxByteBuffer[g_tCli_Config->tNofStoredCharacters - 1];
 }
 
 
@@ -107,7 +108,7 @@ static bool Cli_IsRxBufferFull()
         CLI_ASSERT( g_tCli_Config->acRxByteBuffer );
         CLI_ASSERT( true == g_tCli_Config->bIsInitialized );
     }
-    return ( g_tCli_Config->tCurrentRxBufferSize >= CLI_MAX_RX_BUFFER_SIZE );
+    return ( g_tCli_Config->tNofStoredCharacters >= CLI_MAX_RX_BUFFER_SIZE );
 }
 
 
@@ -122,7 +123,7 @@ static void Cli_ResetRxBuffer()
         CLI_ASSERT( true == g_tCli_Config->bIsInitialized );
     }
     memset( g_tCli_Config->acRxByteBuffer, 0, CLI_MAX_RX_BUFFER_SIZE );
-    g_tCli_Config->tCurrentRxBufferSize = 0;
+    g_tCli_Config->tNofStoredCharacters = 0;
 }
 
 
@@ -193,7 +194,7 @@ void Cli_Initialize( Cli_Config_t *in_ptCfg )
     { // Input Checks
         CLI_ASSERT( in_ptCfg );
         CLI_ASSERT( in_ptCfg->acRxByteBuffer );
-        CLI_ASSERT( 0 == in_ptCfg->tCurrentRxBufferSize );
+        CLI_ASSERT( 0 == in_ptCfg->tNofStoredCharacters );
         CLI_ASSERT( in_ptCfg->atCliCmdBindingsBuffer );
         CLI_ASSERT( in_ptCfg->pFnWriteCharacter );
         CLI_ASSERT( false == in_ptCfg->bIsInitialized );
@@ -240,19 +241,19 @@ void Cli_AddCharacter( Cli_Config_t *ptCfg, char in_cChar )
 
     if( '\b' == in_cChar )
     {
-        if( ptCfg->tCurrentRxBufferSize > 0 )
+        if( ptCfg->tNofStoredCharacters > 0 )
         {
-            ptCfg->tCurrentRxBufferSize--;
-            size_t idx = ptCfg->tCurrentRxBufferSize;
+            ptCfg->tNofStoredCharacters--;
+            size_t idx = ptCfg->tNofStoredCharacters;
             ptCfg->acRxByteBuffer[idx] = '\0';
         }
         return;
     }
 
-    size_t idx = ptCfg->tCurrentRxBufferSize;
+    size_t idx = ptCfg->tNofStoredCharacters;
     ptCfg->acRxByteBuffer[idx] = in_cChar;
-    ptCfg->tCurrentRxBufferSize++;
-    CLI_ASSERT( ptCfg->tCurrentRxBufferSize < CLI_MAX_RX_BUFFER_SIZE );
+    ptCfg->tNofStoredCharacters++;
+    CLI_ASSERT( ptCfg->tNofStoredCharacters < CLI_MAX_RX_BUFFER_SIZE );
 }
 
 void Cli_HandleUnknownCommand( const char *const in_pcCmdName )
@@ -295,7 +296,7 @@ void Cli_Process( Cli_Config_t *ptCfg )
     }
 
     // Process the Buffer
-    for( size_t i = 0; i < ptCfg->tCurrentRxBufferSize; i++ )
+    for( size_t i = 0; i < ptCfg->tNofStoredCharacters; i++ )
     {
         if( s32NofArguments >= CLI_MAX_NOF_ARGUMENTS )
         {
@@ -304,7 +305,7 @@ void Cli_Process( Cli_Config_t *ptCfg )
         }
 
         char *const c = &ptCfg->acRxByteBuffer[i];
-        if( ' ' == *c || '\n' == *c || ( ptCfg->tCurrentRxBufferSize - 1 ) == i )
+        if( ' ' == *c || '\n' == *c || ( ptCfg->tNofStoredCharacters - 1 ) == i )
         {
             *c = '\0';
             if( pcNextArgument )
@@ -321,7 +322,7 @@ void Cli_Process( Cli_Config_t *ptCfg )
         }
     }
 
-    if( CLI_MAX_RX_BUFFER_SIZE == ptCfg->tCurrentRxBufferSize )
+    if( CLI_MAX_RX_BUFFER_SIZE == ptCfg->tNofStoredCharacters )
     {
         Cli_EchoCharacter( '\n' );
     }
@@ -385,11 +386,11 @@ void Cli_AssertFail( const char *msg )
     }
 }
 
-void Cli_WriteString( const char *in_pcString )
+void Cli_Print( const char *fmt, ... )
 {
     { // Input Checks
         CLI_ASSERT( g_tCli_Config );
-        CLI_ASSERT( in_pcString );
+        CLI_ASSERT( fmt );
         CLI_ASSERT( g_tCli_Config->acRxByteBuffer );
         CLI_ASSERT( g_tCli_Config->pFnWriteCharacter );
         CLI_ASSERT( true == g_tCli_Config->bIsInitialized );
@@ -397,6 +398,13 @@ void Cli_WriteString( const char *in_pcString )
         CLI_ASSERT( CLI_CANARY == g_tCli_Config->u32CfgCanaryEnd );
         CLI_ASSERT( CLI_CANARY == g_tCli_Config->u32BufferCanary );
     }
-    Cli_EchoString( in_pcString );
+
+    char    buffer[128]; // Temporary buffer for formatted string
+    va_list args;
+    va_start( args, fmt );
+    vsnprintf( buffer, sizeof( buffer ), fmt, args );
+    va_end( args );
+
+    Cli_EchoString( buffer );
     Cli_EchoCharacter( '\n' );
 }
