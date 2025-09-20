@@ -5,8 +5,9 @@
 #include <stdio.h>
 #include <string.h>
 
-#define CLI_MAX_NOF_ARGUMENTS ( 16 )
-#define CLI_PROMPT            "-------- \n> "
+#define CLI_MAX_NOF_ARGUMENTS   ( 16 )
+#define CLI_PROMPT              "-------- \n> "
+#define CLI_MAX_CMD_NAME_LENGTH ( 32U )
 
 #define CLI_ASSERT_STRINGIFY2( x ) #x
 #define CLI_ASSERT_STRINGIFY( x )  CLI_ASSERT_STRINGIFY2( x )
@@ -38,7 +39,7 @@ static void Cli_ResetRxBuffer( Cli_Config_t *ptCfg );
 static void Cli_EchoString( Cli_Config_t *ptCfg, const char *str );
 static void Cli_WritePrompt( Cli_Config_t *ptCfg );
 static const Cli_Binding_t *Cli_FindCommand( Cli_Config_t *ptCfg,
-                                             const char   *pcCommandName );
+                                             const char   *in_pcCommandName );
 
 /**
  * @brief Sends a character via the shell interface.
@@ -178,11 +179,11 @@ static void Cli_WritePrompt( Cli_Config_t *ptCfg )
  * @return Pointer to the found pcCmdName or NULL.
  */
 static const Cli_Binding_t *Cli_FindCommand( Cli_Config_t *ptCfg,
-                                             const char   *pcCommandName )
+                                             const char   *in_pcCommandName )
 {
     { // Input Checks
         CLI_ASSERT( ptCfg );
-        CLI_ASSERT( pcCommandName );
+        CLI_ASSERT( in_pcCommandName );
         CLI_ASSERT( ptCfg->acRxByteBuffer );
         CLI_ASSERT( g_tCli_Config == ptCfg );
         CLI_ASSERT( ptCfg->atCliCmdBindingsBuffer );
@@ -193,7 +194,7 @@ static const Cli_Binding_t *Cli_FindCommand( Cli_Config_t *ptCfg,
     for( size_t i = 0; i < ptCfg->tNofBindings; i++ )
     {
         const Cli_Binding_t *ptBinding = &ptCfg->atCliCmdBindingsBuffer[i];
-        if( 0 == strcmp( ptBinding->pcCmdName, pcCommandName ) )
+        if( 0 == strcmp( ptBinding->pcCmdName, in_pcCommandName ) )
         {
             return ptBinding;
         }
@@ -280,7 +281,7 @@ void Cli_Process( Cli_Config_t *ptCfg )
 {
     char *acArguments[CLI_MAX_NOF_ARGUMENTS] = { 0 };
     int   s32NofArguments = 0;
-    char *next_arg = NULL;
+    char *pcNextArgument = NULL;
 
     { // Input Checks
         CLI_ASSERT( ptCfg );
@@ -289,12 +290,15 @@ void Cli_Process( Cli_Config_t *ptCfg )
         CLI_ASSERT( ptCfg->pFnWriteCharacter );
         CLI_ASSERT( true == ptCfg->bIsInitialized );
     }
-    if( Cli_GetLastEntryFromRxBuffer( ptCfg ) != '\n' &&
-        !Cli_IsRxBufferFull( ptCfg ) )
-    {
-        return;
+    { // Do nothing, if these conditions are not met
+        if( Cli_GetLastEntryFromRxBuffer( ptCfg ) != '\n' &&
+            ( false == Cli_IsRxBufferFull( ptCfg ) ) )
+        {
+            return;
+        }
     }
 
+    // Process the Buffer
     for( size_t i = 0; i < ptCfg->tCurrentRxBufferSize; i++ )
     {
         if( s32NofArguments >= CLI_MAX_NOF_ARGUMENTS )
@@ -307,17 +311,17 @@ void Cli_Process( Cli_Config_t *ptCfg )
         if( ' ' == *c || '\n' == *c || ( ptCfg->tCurrentRxBufferSize - 1 ) == i )
         {
             *c = '\0';
-            if( next_arg )
+            if( pcNextArgument )
             {
                 int idx = s32NofArguments;
-                acArguments[idx] = next_arg;
+                acArguments[idx] = pcNextArgument;
                 s32NofArguments++;
-                next_arg = NULL;
+                pcNextArgument = NULL;
             }
         }
-        else if( !next_arg )
+        else if( !pcNextArgument )
         {
-            next_arg = c;
+            pcNextArgument = c;
         }
     }
 
@@ -399,4 +403,10 @@ void Cli_AssertFail( const char *msg )
     while( 1 )
     {
     }
+}
+
+void Cli_Print( char *acText )
+{
+    CLI_ASSERT( acText );
+    Cli_EchoString( g_tCli_Config, acText );
 }

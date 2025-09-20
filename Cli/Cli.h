@@ -30,3 +30,5 @@ void Cli_Initialize( Cli_Config_t *ptCfg );
 void Cli_AddCharacter( Cli_Config_t *ptCfg, char c );
 
 void Cli_Process( Cli_Config_t *ptCfg );
+
+void Cli_Print( char *acText );
