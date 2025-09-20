@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 
-void CliBinding_HelloWorld( int argc, char *argv[] )
+void Cli_HelloWorld( int argc, char *argv[] )
 {
     (void)argc;
     (void)argv;

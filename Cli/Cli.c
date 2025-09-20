@@ -1,3 +1,7 @@
+/* #############################################################################
+ * # Includes
+ * ###########################################################################*/
+
 #include "Cli.h"
 
 #include <stdarg.h>
@@ -5,6 +9,10 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
+
+/* #############################################################################
+ * # Defines
+ * ###########################################################################*/
 
 #define CLI_MAX_NOF_ARGUMENTS   ( 16 )
 #define CLI_PROMPT              "-------- \n> "
@@ -24,208 +32,67 @@
         }                                                                      \
     } while( 0 )
 
-
+/* #############################################################################
+ * # static variables
+ * ###########################################################################*/
 static Cli_Config_t *g_tCli_Config = NULL;
 
-static void                 Cli_AssertFail( const char *msg );
-static void                 Cli_WriteCharacter( char c );
-static void                 Cli_EchoCharacter( char c );
-static char                 Cli_GetLastEntryFromRxBuffer();
-static bool                 Cli_IsRxBufferFull();
-static void                 Cli_ResetRxBuffer();
-static void                 Cli_EchoString( const char *str );
-static void                 Cli_WritePrompt();
-static const Cli_Binding_t *Cli_FindCommand( const char *in_pcCommandName );
+/* #############################################################################
+ * # static function prototypes
+ * ###########################################################################*/
 
-/**
- * @brief Sends a character via the shell interface.
- * @param c The character to send.
- */
-static void Cli_WriteCharacter( char c )
+static void Cli_AssertFail( const char *msg );
+static void Cli_WriteCharacter( char c );
+static void Cli_EchoCharacter( char c );
+static char Cli_GetLastEntryFromRxBuffer();
+static bool Cli_IsRxBufferFull();
+static void Cli_ResetRxBuffer();
+static void Cli_EchoString( const char *str );
+static void Cli_WritePrompt();
+static void Cli_HandleUnknownCommand( const char *const in_pcCmdName );
+static const Cli_Binding_t *Cli_FindCommand( const char *const in_pcCommandName );
+
+/* #############################################################################
+ * # global function implementations
+ * ###########################################################################*/
+
+void Cli_Initialize( Cli_Config_t *const inout_ptCfg )
 {
     { // Input Checks
-        CLI_ASSERT( g_tCli_Config );
-        CLI_ASSERT( g_tCli_Config->pFnWriteCharacter );
-        CLI_ASSERT( true == g_tCli_Config->bIsInitialized );
-    }
-    g_tCli_Config->pFnWriteCharacter( c );
-}
-
-
-/**
- * @brief Echoes a character to the shell (handles newline and backspace).
- * @param c The character to echo.
- */
-static void Cli_EchoCharacter( char c )
-{
-    { // Input Checks
-        CLI_ASSERT( g_tCli_Config );
-        CLI_ASSERT( g_tCli_Config->pFnWriteCharacter );
-        CLI_ASSERT( g_tCli_Config->acRxByteBuffer );
-        CLI_ASSERT( true == g_tCli_Config->bIsInitialized );
-    }
-    if( '\n' == c ) // User pressed Enter
-    {
-        Cli_WriteCharacter( '\r' );
-        Cli_WriteCharacter( '\n' );
-    }
-    else if( '\b' == c ) // User pressed Backspace
-    {
-        Cli_WriteCharacter( '\b' );
-        Cli_WriteCharacter( ' ' );
-        Cli_WriteCharacter( '\b' );
-    }
-    else // Every other character
-    {
-        Cli_WriteCharacter( c );
-    }
-}
-
-
-/**
- * @brief Returns the last character of the Rx Buffer
- * @return The last character in the receive buffer.
- */
-static char Cli_GetLastEntryFromRxBuffer()
-{
-    { // Input Checks
-        CLI_ASSERT( g_tCli_Config );
-        CLI_ASSERT( g_tCli_Config->acRxByteBuffer );
-        CLI_ASSERT( true == g_tCli_Config->bIsInitialized );
-    }
-    return g_tCli_Config->acRxByteBuffer[g_tCli_Config->tNofStoredCharacters - 1];
-}
-
-
-/**
- * @brief Checks if the RX buffer is full.
- * @return true if the buffer is full, false otherwise.
- */
-static bool Cli_IsRxBufferFull()
-{
-    { // Input Checks
-        CLI_ASSERT( g_tCli_Config );
-        CLI_ASSERT( g_tCli_Config->acRxByteBuffer );
-        CLI_ASSERT( true == g_tCli_Config->bIsInitialized );
-    }
-    return ( g_tCli_Config->tNofStoredCharacters >= CLI_MAX_RX_BUFFER_SIZE );
-}
-
-
-/**
- * @brief Resets the receive buffer and clears all received characters.
- */
-static void Cli_ResetRxBuffer()
-{
-    { // Input Checks
-        CLI_ASSERT( g_tCli_Config );
-        CLI_ASSERT( g_tCli_Config->acRxByteBuffer );
-        CLI_ASSERT( true == g_tCli_Config->bIsInitialized );
-    }
-    memset( g_tCli_Config->acRxByteBuffer, 0, CLI_MAX_RX_BUFFER_SIZE );
-    g_tCli_Config->tNofStoredCharacters = 0;
-}
-
-
-/**
- * @brief Echoes a string to the shell.
- * @param str The string to echo.
- */
-static void Cli_EchoString( const char *in_pcString )
-{
-    {
-        CLI_ASSERT( g_tCli_Config );
-        CLI_ASSERT( in_pcString );
-        CLI_ASSERT( g_tCli_Config->acRxByteBuffer );
-        CLI_ASSERT( g_tCli_Config->pFnWriteCharacter );
-        CLI_ASSERT( true == g_tCli_Config->bIsInitialized );
+        CLI_ASSERT( inout_ptCfg );
+        CLI_ASSERT( inout_ptCfg->acRxByteBuffer );
+        CLI_ASSERT( 0 == inout_ptCfg->tNofStoredCharacters );
+        CLI_ASSERT( inout_ptCfg->atCliCmdBindingsBuffer );
+        CLI_ASSERT( inout_ptCfg->pFnWriteCharacter );
+        CLI_ASSERT( false == inout_ptCfg->bIsInitialized );
+        CLI_ASSERT( inout_ptCfg->tNofBindings > 0 );
     }
 
-    for( const char *pcChar = in_pcString; *pcChar != '\0'; pcChar++ )
-    {
-        Cli_EchoCharacter( *pcChar );
-    }
-}
+    inout_ptCfg->u32CfgCanaryStart = CLI_CANARY;
+    inout_ptCfg->u32CfgCanaryEnd = CLI_CANARY;
+    inout_ptCfg->u32BufferCanary = CLI_CANARY;
+    inout_ptCfg->bIsInitialized = true;
 
-
-/**
- * @brief Outputs the shell prompt.
- */
-static void Cli_WritePrompt()
-{
-    { // Input Checks
-        CLI_ASSERT( g_tCli_Config );
-        CLI_ASSERT( g_tCli_Config->acRxByteBuffer );
-        CLI_ASSERT( true == g_tCli_Config->bIsInitialized );
-    }
-    Cli_EchoString( CLI_PROMPT );
-}
-
-
-/**
- * @brief Searches for a shell pcCmdName by its name.
- * @param name Name of the pcCmdName.
- * @return Pointer to the found pcCmdName or NULL.
- */
-static const Cli_Binding_t *Cli_FindCommand( const char *in_pcCommandName )
-{
-    { // Input Checks
-        CLI_ASSERT( g_tCli_Config );
-        CLI_ASSERT( in_pcCommandName );
-        CLI_ASSERT( g_tCli_Config->acRxByteBuffer );
-        CLI_ASSERT( g_tCli_Config->atCliCmdBindingsBuffer );
-        CLI_ASSERT( g_tCli_Config->tNofBindings > 0 );
-        CLI_ASSERT( true == g_tCli_Config->bIsInitialized );
-    }
-
-    for( size_t i = 0; i < g_tCli_Config->tNofBindings; i++ )
-    {
-        const Cli_Binding_t *ptBinding = &g_tCli_Config->atCliCmdBindingsBuffer[i];
-        if( 0 == strcmp( ptBinding->pcCmdName, in_pcCommandName ) )
-        {
-            return ptBinding;
-        }
-    }
-    return NULL;
-}
-
-void Cli_Initialize( Cli_Config_t *in_ptCfg )
-{
-    { // Input Checks
-        CLI_ASSERT( in_ptCfg );
-        CLI_ASSERT( in_ptCfg->acRxByteBuffer );
-        CLI_ASSERT( 0 == in_ptCfg->tNofStoredCharacters );
-        CLI_ASSERT( in_ptCfg->atCliCmdBindingsBuffer );
-        CLI_ASSERT( in_ptCfg->pFnWriteCharacter );
-        CLI_ASSERT( false == in_ptCfg->bIsInitialized );
-        CLI_ASSERT( in_ptCfg->tNofBindings > 0 );
-    }
-
-    in_ptCfg->u32CfgCanaryStart = CLI_CANARY;
-    in_ptCfg->u32CfgCanaryEnd = CLI_CANARY;
-    in_ptCfg->u32BufferCanary = CLI_CANARY;
-    in_ptCfg->bIsInitialized = true;
-
-    g_tCli_Config = in_ptCfg;
+    g_tCli_Config = inout_ptCfg;
 
     Cli_ResetRxBuffer();
     Cli_EchoString( "CLI was started - enter your commands\n" );
     Cli_EchoString( CLI_PROMPT );
 
-    CLI_ASSERT( in_ptCfg == g_tCli_Config );
+    CLI_ASSERT( inout_ptCfg == g_tCli_Config );
 }
 
-void Cli_AddCharacter( Cli_Config_t *ptCfg, char in_cChar )
+void Cli_AddCharacter( Cli_Config_t *const inout_ptCfg, char in_cChar )
 {
     { // Input Checks
-        CLI_ASSERT( ptCfg );
-        CLI_ASSERT( true == ptCfg->bIsInitialized );
-        CLI_ASSERT( ptCfg->acRxByteBuffer );
-        CLI_ASSERT( g_tCli_Config == ptCfg );
-        CLI_ASSERT( ptCfg->pFnWriteCharacter );
-        CLI_ASSERT( CLI_CANARY == ptCfg->u32CfgCanaryStart );
-        CLI_ASSERT( CLI_CANARY == ptCfg->u32CfgCanaryEnd );
-        CLI_ASSERT( CLI_CANARY == ptCfg->u32BufferCanary );
+        CLI_ASSERT( inout_ptCfg );
+        CLI_ASSERT( true == inout_ptCfg->bIsInitialized );
+        CLI_ASSERT( inout_ptCfg->acRxByteBuffer );
+        CLI_ASSERT( g_tCli_Config == inout_ptCfg );
+        CLI_ASSERT( inout_ptCfg->pFnWriteCharacter );
+        CLI_ASSERT( CLI_CANARY == inout_ptCfg->u32CfgCanaryStart );
+        CLI_ASSERT( CLI_CANARY == inout_ptCfg->u32CfgCanaryEnd );
+        CLI_ASSERT( CLI_CANARY == inout_ptCfg->u32BufferCanary );
     }
 
     if( '\r' == in_cChar )
@@ -241,51 +108,36 @@ void Cli_AddCharacter( Cli_Config_t *ptCfg, char in_cChar )
 
     if( '\b' == in_cChar )
     {
-        if( ptCfg->tNofStoredCharacters > 0 )
+        if( inout_ptCfg->tNofStoredCharacters > 0 )
         {
-            ptCfg->tNofStoredCharacters--;
-            size_t idx = ptCfg->tNofStoredCharacters;
-            ptCfg->acRxByteBuffer[idx] = '\0';
+            inout_ptCfg->tNofStoredCharacters--;
+            size_t idx = inout_ptCfg->tNofStoredCharacters;
+            inout_ptCfg->acRxByteBuffer[idx] = '\0';
         }
         return;
     }
 
-    size_t idx = ptCfg->tNofStoredCharacters;
-    ptCfg->acRxByteBuffer[idx] = in_cChar;
-    ptCfg->tNofStoredCharacters++;
-    CLI_ASSERT( ptCfg->tNofStoredCharacters < CLI_MAX_RX_BUFFER_SIZE );
+    size_t idx = inout_ptCfg->tNofStoredCharacters;
+    inout_ptCfg->acRxByteBuffer[idx] = in_cChar;
+    inout_ptCfg->tNofStoredCharacters++;
+    CLI_ASSERT( inout_ptCfg->tNofStoredCharacters < CLI_MAX_RX_BUFFER_SIZE );
 }
 
-void Cli_HandleUnknownCommand( const char *const in_pcCmdName )
-{
-    { // Input Checks
-        CLI_ASSERT( g_tCli_Config );
-        CLI_ASSERT( in_pcCmdName );
-        CLI_ASSERT( g_tCli_Config->acRxByteBuffer );
-        CLI_ASSERT( g_tCli_Config->pFnWriteCharacter );
-        CLI_ASSERT( true == g_tCli_Config->bIsInitialized );
-    }
-    Cli_EchoString( CLI_FAIL_PROMPT "Unknown command: " );
-    Cli_EchoString( in_pcCmdName );
-    Cli_EchoCharacter( '\n' );
-    Cli_EchoString( "Type 'help' to list all commands\n" );
-}
-
-void Cli_Process( Cli_Config_t *ptCfg )
+void Cli_Process( Cli_Config_t *const inout_ptCfg )
 {
     char *acArguments[CLI_MAX_NOF_ARGUMENTS] = { 0 };
     int   s32NofArguments = 0;
     char *pcNextArgument = NULL;
 
     { // Input Checks
-        CLI_ASSERT( ptCfg );
-        CLI_ASSERT( ptCfg->acRxByteBuffer );
-        CLI_ASSERT( g_tCli_Config == ptCfg );
-        CLI_ASSERT( ptCfg->pFnWriteCharacter );
-        CLI_ASSERT( true == ptCfg->bIsInitialized );
-        CLI_ASSERT( CLI_CANARY == ptCfg->u32CfgCanaryStart );
-        CLI_ASSERT( CLI_CANARY == ptCfg->u32CfgCanaryEnd );
-        CLI_ASSERT( CLI_CANARY == ptCfg->u32BufferCanary );
+        CLI_ASSERT( inout_ptCfg );
+        CLI_ASSERT( inout_ptCfg->acRxByteBuffer );
+        CLI_ASSERT( g_tCli_Config == inout_ptCfg );
+        CLI_ASSERT( inout_ptCfg->pFnWriteCharacter );
+        CLI_ASSERT( true == inout_ptCfg->bIsInitialized );
+        CLI_ASSERT( CLI_CANARY == inout_ptCfg->u32CfgCanaryStart );
+        CLI_ASSERT( CLI_CANARY == inout_ptCfg->u32CfgCanaryEnd );
+        CLI_ASSERT( CLI_CANARY == inout_ptCfg->u32BufferCanary );
     }
     { // Do nothing, if these conditions are not met
         if( Cli_GetLastEntryFromRxBuffer() != '\n' &&
@@ -296,7 +148,7 @@ void Cli_Process( Cli_Config_t *ptCfg )
     }
 
     // Process the Buffer
-    for( size_t i = 0; i < ptCfg->tNofStoredCharacters; i++ )
+    for( size_t i = 0; i < inout_ptCfg->tNofStoredCharacters; i++ )
     {
         if( s32NofArguments >= CLI_MAX_NOF_ARGUMENTS )
         {
@@ -304,8 +156,9 @@ void Cli_Process( Cli_Config_t *ptCfg )
             break;
         }
 
-        char *const c = &ptCfg->acRxByteBuffer[i];
-        if( ' ' == *c || '\n' == *c || ( ptCfg->tNofStoredCharacters - 1 ) == i )
+        char *const c = &inout_ptCfg->acRxByteBuffer[i];
+        if( ' ' == *c || '\n' == *c ||
+            ( inout_ptCfg->tNofStoredCharacters - 1 ) == i )
         {
             *c = '\0';
             if( pcNextArgument )
@@ -322,15 +175,16 @@ void Cli_Process( Cli_Config_t *ptCfg )
         }
     }
 
-    if( CLI_MAX_RX_BUFFER_SIZE == ptCfg->tNofStoredCharacters )
+    if( CLI_MAX_RX_BUFFER_SIZE == inout_ptCfg->tNofStoredCharacters )
     {
         Cli_EchoCharacter( '\n' );
     }
 
+    // call the command handler (if available)
     if( s32NofArguments >= 1 )
     {
         const Cli_Binding_t *ptCmdBinding = Cli_FindCommand( acArguments[0] );
-        if( !ptCmdBinding )
+        if( NULL == ptCmdBinding )
         {
             Cli_HandleUnknownCommand( acArguments[0] );
         }
@@ -339,11 +193,36 @@ void Cli_Process( Cli_Config_t *ptCfg )
             ptCmdBinding->pFnCmdHandler( s32NofArguments, acArguments );
         }
     }
-    Cli_ResetRxBuffer( ptCfg );
-    Cli_WritePrompt( ptCfg );
+
+    // Reset the cli buffer and write the prompt again for a new user input
+    Cli_ResetRxBuffer( inout_ptCfg );
+    Cli_WritePrompt( inout_ptCfg );
 }
 
-void CliBinding_HelpHandler( int argc, char *argv[] )
+void Cli_Print( const char *fmt, ... )
+{
+    { // Input Checks
+        CLI_ASSERT( g_tCli_Config );
+        CLI_ASSERT( fmt );
+        CLI_ASSERT( g_tCli_Config->acRxByteBuffer );
+        CLI_ASSERT( g_tCli_Config->pFnWriteCharacter );
+        CLI_ASSERT( true == g_tCli_Config->bIsInitialized );
+        CLI_ASSERT( CLI_CANARY == g_tCli_Config->u32CfgCanaryStart );
+        CLI_ASSERT( CLI_CANARY == g_tCli_Config->u32CfgCanaryEnd );
+        CLI_ASSERT( CLI_CANARY == g_tCli_Config->u32BufferCanary );
+    }
+
+    char    buffer[128]; // Temporary buffer for formatted string
+    va_list args;
+    va_start( args, fmt );
+    vsnprintf( buffer, sizeof( buffer ), fmt, args );
+    va_end( args );
+
+    Cli_EchoString( buffer );
+    Cli_EchoCharacter( '\n' );
+}
+
+void Cli_HelpCommand( int argc, char *argv[] )
 {
     { // Input Checks
         CLI_ASSERT( g_tCli_Config );
@@ -371,7 +250,140 @@ void CliBinding_HelpHandler( int argc, char *argv[] )
     return;
 }
 
-void Cli_AssertFail( const char *msg )
+/* #############################################################################
+ * # static function implementations
+ * ###########################################################################*/
+
+static void Cli_WriteCharacter( char c )
+{
+    { // Input Checks
+        CLI_ASSERT( g_tCli_Config );
+        CLI_ASSERT( g_tCli_Config->pFnWriteCharacter );
+        CLI_ASSERT( true == g_tCli_Config->bIsInitialized );
+    }
+    g_tCli_Config->pFnWriteCharacter( c );
+}
+
+static void Cli_EchoCharacter( char c )
+{
+    { // Input Checks
+        CLI_ASSERT( g_tCli_Config );
+        CLI_ASSERT( g_tCli_Config->pFnWriteCharacter );
+        CLI_ASSERT( g_tCli_Config->acRxByteBuffer );
+        CLI_ASSERT( true == g_tCli_Config->bIsInitialized );
+    }
+    if( '\n' == c ) // User pressed Enter
+    {
+        Cli_WriteCharacter( '\r' );
+        Cli_WriteCharacter( '\n' );
+    }
+    else if( '\b' == c ) // User pressed Backspace
+    {
+        Cli_WriteCharacter( '\b' );
+        Cli_WriteCharacter( ' ' );
+        Cli_WriteCharacter( '\b' );
+    }
+    else // Every other character
+    {
+        Cli_WriteCharacter( c );
+    }
+}
+
+static char Cli_GetLastEntryFromRxBuffer()
+{
+    { // Input Checks
+        CLI_ASSERT( g_tCli_Config );
+        CLI_ASSERT( g_tCli_Config->acRxByteBuffer );
+        CLI_ASSERT( true == g_tCli_Config->bIsInitialized );
+    }
+    return g_tCli_Config->acRxByteBuffer[g_tCli_Config->tNofStoredCharacters - 1];
+}
+
+static bool Cli_IsRxBufferFull()
+{
+    { // Input Checks
+        CLI_ASSERT( g_tCli_Config );
+        CLI_ASSERT( g_tCli_Config->acRxByteBuffer );
+        CLI_ASSERT( true == g_tCli_Config->bIsInitialized );
+    }
+    return ( g_tCli_Config->tNofStoredCharacters >= CLI_MAX_RX_BUFFER_SIZE );
+}
+
+static void Cli_ResetRxBuffer()
+{
+    { // Input Checks
+        CLI_ASSERT( g_tCli_Config );
+        CLI_ASSERT( g_tCli_Config->acRxByteBuffer );
+        CLI_ASSERT( true == g_tCli_Config->bIsInitialized );
+    }
+    memset( g_tCli_Config->acRxByteBuffer, 0, CLI_MAX_RX_BUFFER_SIZE );
+    g_tCli_Config->tNofStoredCharacters = 0;
+}
+
+static void Cli_EchoString( const char *in_pcString )
+{
+    {
+        CLI_ASSERT( g_tCli_Config );
+        CLI_ASSERT( in_pcString );
+        CLI_ASSERT( g_tCli_Config->acRxByteBuffer );
+        CLI_ASSERT( g_tCli_Config->pFnWriteCharacter );
+        CLI_ASSERT( true == g_tCli_Config->bIsInitialized );
+    }
+
+    for( const char *pcChar = in_pcString; *pcChar != '\0'; pcChar++ )
+    {
+        Cli_EchoCharacter( *pcChar );
+    }
+}
+
+static void Cli_WritePrompt()
+{
+    { // Input Checks
+        CLI_ASSERT( g_tCli_Config );
+        CLI_ASSERT( g_tCli_Config->acRxByteBuffer );
+        CLI_ASSERT( true == g_tCli_Config->bIsInitialized );
+    }
+    Cli_EchoString( CLI_PROMPT );
+}
+
+static const Cli_Binding_t *Cli_FindCommand( const char *const in_pcCommandName )
+{
+    { // Input Checks
+        CLI_ASSERT( g_tCli_Config );
+        CLI_ASSERT( in_pcCommandName );
+        CLI_ASSERT( g_tCli_Config->acRxByteBuffer );
+        CLI_ASSERT( g_tCli_Config->atCliCmdBindingsBuffer );
+        CLI_ASSERT( g_tCli_Config->tNofBindings > 0 );
+        CLI_ASSERT( true == g_tCli_Config->bIsInitialized );
+    }
+
+    for( size_t i = 0; i < g_tCli_Config->tNofBindings; i++ )
+    {
+        const Cli_Binding_t *ptBinding = &g_tCli_Config->atCliCmdBindingsBuffer[i];
+        if( 0 == strcmp( ptBinding->pcCmdName, in_pcCommandName ) )
+        {
+            return ptBinding;
+        }
+    }
+    return NULL;
+}
+
+static void Cli_HandleUnknownCommand( const char *const in_pcCmdName )
+{
+    { // Input Checks
+        CLI_ASSERT( g_tCli_Config );
+        CLI_ASSERT( in_pcCmdName );
+        CLI_ASSERT( g_tCli_Config->acRxByteBuffer );
+        CLI_ASSERT( g_tCli_Config->pFnWriteCharacter );
+        CLI_ASSERT( true == g_tCli_Config->bIsInitialized );
+    }
+    Cli_EchoString( CLI_FAIL_PROMPT "Unknown command: " );
+    Cli_EchoString( in_pcCmdName );
+    Cli_EchoCharacter( '\n' );
+    Cli_EchoString( "Type 'help' to list all commands\n" );
+}
+
+static void Cli_AssertFail( const char *const msg )
 {
     // If the CLI is not initialized, we cannot print the assert message
     // Therefore we only enter an infinite loop
@@ -384,27 +396,4 @@ void Cli_AssertFail( const char *msg )
     while( 1 )
     {
     }
-}
-
-void Cli_Print( const char *fmt, ... )
-{
-    { // Input Checks
-        CLI_ASSERT( g_tCli_Config );
-        CLI_ASSERT( fmt );
-        CLI_ASSERT( g_tCli_Config->acRxByteBuffer );
-        CLI_ASSERT( g_tCli_Config->pFnWriteCharacter );
-        CLI_ASSERT( true == g_tCli_Config->bIsInitialized );
-        CLI_ASSERT( CLI_CANARY == g_tCli_Config->u32CfgCanaryStart );
-        CLI_ASSERT( CLI_CANARY == g_tCli_Config->u32CfgCanaryEnd );
-        CLI_ASSERT( CLI_CANARY == g_tCli_Config->u32BufferCanary );
-    }
-
-    char    buffer[128]; // Temporary buffer for formatted string
-    va_list args;
-    va_start( args, fmt );
-    vsnprintf( buffer, sizeof( buffer ), fmt, args );
-    va_end( args );
-
-    Cli_EchoString( buffer );
-    Cli_EchoCharacter( '\n' );
 }

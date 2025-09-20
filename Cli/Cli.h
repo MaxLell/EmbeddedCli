@@ -29,10 +29,10 @@ typedef struct
 } Cli_Config_t;
 
 
-void Cli_Initialize( Cli_Config_t *ptCfg );
+void Cli_Initialize( Cli_Config_t *const inout_ptCfg );
 
-void Cli_AddCharacter( Cli_Config_t *ptCfg, char c );
+void Cli_AddCharacter( Cli_Config_t *const inout_ptCfg, char in_cChar );
 
-void Cli_Process( Cli_Config_t *ptCfg );
+void Cli_Process( Cli_Config_t *const inout_ptCfg );
 
-void Cli_Print( const char *fmt, ... );
+void Cli_Print( const char *const fmt, ... );
