@@ -14,10 +14,11 @@
  * # Defines
  * ###########################################################################*/
 
-#define CLI_MAX_NOF_ARGUMENTS   ( 16 )
-#define CLI_PROMPT              "-------- \n> "
-#define CLI_MAX_CMD_NAME_LENGTH ( 32U )
-#define CLI_CANARY              ( 0xA5A5A5A5U )
+#define CLI_MAX_NOF_ARGUMENTS        ( 16 )
+#define CLI_PROMPT                   "-------- \n> "
+#define CLI_MAX_CMD_NAME_LENGTH      ( 32U )
+#define CLI_MAX_HELPER_STRING_LENGTH ( 64U )
+#define CLI_CANARY                   ( 0xA5A5A5A5U )
 
 #define CLI_ASSERT_STRINGIFY2( x ) #x
 #define CLI_ASSERT_STRINGIFY( x )  CLI_ASSERT_STRINGIFY2( x )
@@ -72,6 +73,17 @@ void Cli_Initialize( Cli_Config_t *const inout_ptCfg )
     inout_ptCfg->u32CfgCanaryEnd = CLI_CANARY;
     inout_ptCfg->u32BufferCanary = CLI_CANARY;
     inout_ptCfg->bIsInitialized = true;
+
+    // Iterate over the command bindings and check if they are valid
+    for( size_t i = 0; i < inout_ptCfg->tNofBindings; i++ )
+    {
+        const Cli_Binding_t *ptCmdBinding = &inout_ptCfg->atCliCmdBindingsBuffer[i];
+        CLI_ASSERT( ptCmdBinding->pcCmdName );
+        CLI_ASSERT( ptCmdBinding->pFnCmdHandler );
+        CLI_ASSERT( strlen( ptCmdBinding->pcCmdName ) < CLI_MAX_CMD_NAME_LENGTH );
+        CLI_ASSERT( strlen( ptCmdBinding->pcHelperString ) <
+                    CLI_MAX_HELPER_STRING_LENGTH );
+    }
 
     g_tCli_Config = inout_ptCfg;
 

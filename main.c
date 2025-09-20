@@ -1,24 +1,19 @@
 #include "Cli.h"
 
-#include <stdbool.h>
-#include <stdint.h>
 #include <stdio.h>
-#include <string.h>
 
-#define ARRAY_SIZE( arr ) ( sizeof( arr ) / sizeof( arr[0] ) )
+extern int Cli_HelloWorld( int argc, char *argv[] );
+extern int Cli_DisplayArgs( int argc, char *argv[] );
+extern int Cli_ClearScreen( int argc, char *argv[] );
+extern int Cli_EchoString( int argc, char *argv[] );
+extern int Cli_HelpCommand( int argc, char *argv[] );
 
-extern void Cli_HelloWorld( int argc, char *argv[] );
-extern void Cli_DisplayArgs( int argc, char *argv[] );
-extern void Cli_ClearScreen( int argc, char *argv[] );
-extern void Cli_EchoString( int argc, char *argv[] );
-extern void Cli_HelpCommand( int argc, char *argv[] );
-
-int console_putc( char c )
+int Console_PutCharacter( char c )
 {
     return putchar( c );
 }
 
-char console_getc( void )
+char Console_GetCharacter( void )
 {
     return (char)getchar();
 }
@@ -34,17 +29,17 @@ int main( void )
     };
 
     Cli_Config_t tCliCfg = {
-        .pFnWriteCharacter = console_putc,
+        .pFnWriteCharacter = Console_PutCharacter,
         .bIsInitialized = false,
         .atCliCmdBindingsBuffer = atCliBindings,
-        .tNofBindings = ARRAY_SIZE( atCliBindings ),
+        .tNofBindings = CLI_GET_ARRAY_SIZE( atCliBindings ),
     };
 
     Cli_Initialize( &tCliCfg );
 
-    while( true )
+    while( 1 )
     {
-        char c = console_getc();
+        char c = Console_GetCharacter();
         Cli_AddCharacter( &tCliCfg, c );
         Cli_Process( &tCliCfg );
     }
