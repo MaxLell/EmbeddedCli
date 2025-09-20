@@ -7,11 +7,11 @@
 
 #define ARRAY_SIZE( arr ) ( sizeof( arr ) / sizeof( arr[0] ) )
 
-extern void CliBinding_HelloWorld( int argc, char *argv[] );
+extern void Cli_HelloWorld( int argc, char *argv[] );
 extern void Cli_DisplayArgs( int argc, char *argv[] );
 extern void Cli_ClearScreen( int argc, char *argv[] );
 extern void Cli_EchoString( int argc, char *argv[] );
-extern void CliBinding_HelpHandler( int argc, char *argv[] );
+extern void Cli_HelpCommand( int argc, char *argv[] );
 
 int console_putc( char c )
 {
@@ -26,8 +26,8 @@ char console_getc( void )
 int main( void )
 {
     Cli_Binding_t atCliBindings[] = {
-        { "hello", CliBinding_HelloWorld, "Say hello" },
-        { "help", CliBinding_HelpHandler, "Lists all commands" },
+        { "hello", Cli_HelloWorld, "Say hello" },
+        { "help", Cli_HelpCommand, "Lists all commands" },
         { "display_args", Cli_DisplayArgs, "Displays the given cli arguments" },
         { "clear", Cli_ClearScreen, "Clears the screen" },
         { "echo", Cli_EchoString, "Echoes the given string" },
