@@ -25,8 +25,6 @@ char console_getc( void )
 
 int main( void )
 {
-    static char acRxByteBuffer[CLI_MAX_RX_BUFFER_SIZE] = { 0 };
-
     Cli_Binding_t atCliBindings[] = {
         { "hello", CliBinding_HelloWorld, "Say hello" },
         { "help", CliBinding_HelpHandler, "Lists all commands" },
@@ -35,12 +33,12 @@ int main( void )
         { "echo", Cli_EchoString, "Echoes the given string" },
     };
 
-    Cli_Config_t tCliCfg = { .pFnWriteCharacter = console_putc,
-                             .bIsInitialized = false,
-                             .acRxByteBuffer = acRxByteBuffer,
-                             .tCurrentRxBufferSize = 0,
-                             .atCliCmdBindingsBuffer = atCliBindings,
-                             .tNofBindings = ARRAY_SIZE( atCliBindings ) };
+    Cli_Config_t tCliCfg = {
+        .pFnWriteCharacter = console_putc,
+        .bIsInitialized = false,
+        .atCliCmdBindingsBuffer = atCliBindings,
+        .tNofBindings = ARRAY_SIZE( atCliBindings ),
+    };
 
     Cli_Initialize( &tCliCfg );
 

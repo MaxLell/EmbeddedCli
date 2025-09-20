@@ -8,6 +8,7 @@
 #define CLI_MAX_NOF_ARGUMENTS   ( 16 )
 #define CLI_PROMPT              "-------- \n> "
 #define CLI_MAX_CMD_NAME_LENGTH ( 32U )
+#define CLI_CANARY              ( 0xA5A5A5A5U )
 
 #define CLI_ASSERT_STRINGIFY2( x ) #x
 #define CLI_ASSERT_STRINGIFY( x )  CLI_ASSERT_STRINGIFY2( x )
@@ -23,11 +24,6 @@
     } while( 0 )
 
 
-/**
- * This global variable is only to be used:
- * - by the 'help' command function
- * - by the Cli_AssertFail function
- */
 static Cli_Config_t *g_tCli_Config = NULL;
 
 static void                 Cli_AssertFail( const char *msg );
@@ -204,8 +200,12 @@ void Cli_Initialize( Cli_Config_t *in_ptCfg )
         CLI_ASSERT( in_ptCfg->tNofBindings > 0 );
     }
 
+    in_ptCfg->u32CfgCanaryStart = CLI_CANARY;
+    in_ptCfg->u32CfgCanaryEnd = CLI_CANARY;
+    in_ptCfg->u32BufferCanary = CLI_CANARY;
+    in_ptCfg->bIsInitialized = true;
+
     g_tCli_Config = in_ptCfg;
-    g_tCli_Config->bIsInitialized = true;
 
     Cli_ResetRxBuffer();
     Cli_EchoString( "CLI was started - enter your commands\n" );
@@ -222,6 +222,9 @@ void Cli_AddCharacter( Cli_Config_t *ptCfg, char in_cChar )
         CLI_ASSERT( ptCfg->acRxByteBuffer );
         CLI_ASSERT( g_tCli_Config == ptCfg );
         CLI_ASSERT( ptCfg->pFnWriteCharacter );
+        CLI_ASSERT( CLI_CANARY == ptCfg->u32CfgCanaryStart );
+        CLI_ASSERT( CLI_CANARY == ptCfg->u32CfgCanaryEnd );
+        CLI_ASSERT( CLI_CANARY == ptCfg->u32BufferCanary );
     }
 
     if( '\r' == in_cChar )
@@ -279,6 +282,9 @@ void Cli_Process( Cli_Config_t *ptCfg )
         CLI_ASSERT( g_tCli_Config == ptCfg );
         CLI_ASSERT( ptCfg->pFnWriteCharacter );
         CLI_ASSERT( true == ptCfg->bIsInitialized );
+        CLI_ASSERT( CLI_CANARY == ptCfg->u32CfgCanaryStart );
+        CLI_ASSERT( CLI_CANARY == ptCfg->u32CfgCanaryEnd );
+        CLI_ASSERT( CLI_CANARY == ptCfg->u32BufferCanary );
     }
     { // Do nothing, if these conditions are not met
         if( Cli_GetLastEntryFromRxBuffer() != '\n' &&
@@ -387,6 +393,9 @@ void Cli_WriteString( const char *in_pcString )
         CLI_ASSERT( g_tCli_Config->acRxByteBuffer );
         CLI_ASSERT( g_tCli_Config->pFnWriteCharacter );
         CLI_ASSERT( true == g_tCli_Config->bIsInitialized );
+        CLI_ASSERT( CLI_CANARY == g_tCli_Config->u32CfgCanaryStart );
+        CLI_ASSERT( CLI_CANARY == g_tCli_Config->u32CfgCanaryEnd );
+        CLI_ASSERT( CLI_CANARY == g_tCli_Config->u32BufferCanary );
     }
     Cli_EchoString( in_pcString );
     Cli_EchoCharacter( '\n' );

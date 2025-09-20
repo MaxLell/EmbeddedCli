@@ -2,6 +2,7 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 
 #define CLI_MAX_RX_BUFFER_SIZE ( 256 )
 #define CLI_OK_PROMPT          "\033[32m[OK]  \033[0m "
@@ -16,12 +17,15 @@ typedef struct
 
 typedef struct
 {
+    uint32_t u32CfgCanaryStart;
     int ( *pFnWriteCharacter )( char c );
     bool           bIsInitialized;
     size_t         tCurrentRxBufferSize;
-    char          *acRxByteBuffer;
+    char           acRxByteBuffer[CLI_MAX_RX_BUFFER_SIZE];
+    uint32_t       u32BufferCanary;
     Cli_Binding_t *atCliCmdBindingsBuffer;
     size_t         tNofBindings;
+    uint32_t       u32CfgCanaryEnd;
 } Cli_Config_t;
 
 
