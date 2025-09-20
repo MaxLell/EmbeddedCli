@@ -76,7 +76,8 @@ void Cli_Initialize( Cli_Config_t *const inout_ptCfg )
     g_tCli_Config = inout_ptCfg;
 
     Cli_ResetRxBuffer();
-    Cli_EchoString( "CLI was started - enter your commands\n" );
+    Cli_EchoString( "CLI was started - enter your commands (or enter "
+                    "'help')\n" );
     Cli_EchoString( CLI_PROMPT );
 
     CLI_ASSERT( inout_ptCfg == g_tCli_Config );
@@ -90,6 +91,7 @@ void Cli_AddCharacter( Cli_Config_t *const inout_ptCfg, char in_cChar )
         CLI_ASSERT( inout_ptCfg->acRxByteBuffer );
         CLI_ASSERT( g_tCli_Config == inout_ptCfg );
         CLI_ASSERT( inout_ptCfg->pFnWriteCharacter );
+        CLI_ASSERT( inout_ptCfg->tNofStoredCharacters < CLI_MAX_RX_BUFFER_SIZE );
         CLI_ASSERT( CLI_CANARY == inout_ptCfg->u32CfgCanaryStart );
         CLI_ASSERT( CLI_CANARY == inout_ptCfg->u32CfgCanaryEnd );
         CLI_ASSERT( CLI_CANARY == inout_ptCfg->u32BufferCanary );
