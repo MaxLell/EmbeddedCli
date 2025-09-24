@@ -16,5 +16,5 @@ target_include_directories(firmware-cli PRIVATE ${CMAKE_SOURCE_DIR} ${CMAKE_SOUR
 
 # Compiler warnings (optional)
 if (CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
-  target_compile_options(firmware-cli PRIVATE -Wall -Wextra -Wpedantic)
+  target_compile_options(firmware-cli PRIVATE -Wall -Wextra -Wpedantic -g)
 endif()
