@@ -1,0 +1,20 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "cmake: configure",
+            "type": "shell",
+            "command": "cmake -S ${workspaceFolder} -B ${workspaceFolder}/build -DCMAKE_BUILD_TYPE=Debug",
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "label": "cmake: build",
+            "type": "shell",
+            "command": "cmake --build ${workspaceFolder}/build -- -j$(nproc)",
+            "group": "build",
+            "dependsOn": "cmake: configure",
+            "problemMatcher": []
+        }
+    ]
+}
