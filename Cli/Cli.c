@@ -49,7 +49,7 @@ static void Cli_ResetRxBuffer();
 static void Cli_EchoString( const char *str );
 static void Cli_WritePrompt();
 static void Cli_HandleUnknownCommand( const char *const in_pcCmdName );
-static int  Cli_HelpCommand( int argc, char *argv[] );
+static int  Cli_HelpCommand( int argc, char *argv[], void *context );
 static const Cli_Binding_t *Cli_FindCommand( const char *const in_pcCommandName );
 
 /* #############################################################################
@@ -79,7 +79,8 @@ void Cli_Init( Cli_Config_t *const         inout_ptCfg,
     g_tCli_Config->bIsInitialized = true;
 
     // Register the Help handler
-    Cli_Binding_t helpBinding = { "help", Cli_HelpCommand, "Lists all commands" };
+    Cli_Binding_t helpBinding = { "help", Cli_HelpCommand, NULL,
+                                  "Lists all commands" };
     Cli_RegisterBinding( &helpBinding );
 
     // Reset the Rx Buffer and print the welcome message
@@ -197,7 +198,8 @@ void Cli_ProcessBuffer()
         }
         else
         {
-            ptCmdBinding->pFnCmdHandler( s32NofArguments, acArguments );
+            ptCmdBinding->pFnCmdHandler( s32NofArguments, acArguments,
+                                         ptCmdBinding->pContext );
         }
     }
 
@@ -280,7 +282,7 @@ void Cli_RegisterBinding( const Cli_Binding_t *const in_ptBinding )
  * # static function implementations
  * ###########################################################################*/
 
-static int Cli_HelpCommand( int argc, char *argv[] )
+static int Cli_HelpCommand( int argc, char *argv[], void *context )
 {
     { // Input Checks
         CLI_ASSERT( g_tCli_Config );
@@ -302,6 +304,7 @@ static int Cli_HelpCommand( int argc, char *argv[] )
 
     (void)argc;
     (void)argv;
+    (void)context;
 
     return CLI_OK_STATUS;
 }

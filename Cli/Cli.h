@@ -15,13 +15,14 @@
 
 #define CLI_GET_ARRAY_SIZE( arr ) ( sizeof( arr ) / sizeof( arr[0] ) )
 
-typedef int ( *Cli_CommandHandler_t )( int argc, char *argv[] );
+typedef int ( *Cli_CommandHandler_t )( int argc, char *argv[], void *context );
 typedef int ( *Cli_WriteCharacterHandler_t )( char c );
 
 typedef struct Cli_Binding
 {
     const char           pcCmdName[CLI_MAX_CMD_NAME_LENGTH];
     Cli_CommandHandler_t pFnCmdHandler;
+    void                *pContext;
     const char           pcHelperString[CLI_MAX_HELPER_STRING_LENGTH];
 } Cli_Binding_t;
 

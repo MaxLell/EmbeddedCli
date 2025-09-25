@@ -2,10 +2,62 @@
 
 #include <stdio.h>
 
-extern int Cli_HelloWorld( int argc, char *argv[] );
-extern int Cli_DisplayArgs( int argc, char *argv[] );
-extern int Cli_ClearScreen( int argc, char *argv[] );
-extern int Cli_EchoString( int argc, char *argv[] );
+// #############################################################################
+// # Command Implementations
+// ###########################################################################
+
+int Cli_HelloWorld( int argc, char *argv[], void *context );
+int Cli_EchoString( int argc, char *argv[], void *context );
+int Cli_DisplayArgs( int argc, char *argv[], void *context );
+int Cli_ClearScreen( int argc, char *argv[], void *context );
+
+int Cli_HelloWorld( int argc, char *argv[], void *context )
+{
+    (void)argc;
+    (void)argv;
+    (void)context;
+    Cli_Print( "%sHello World!\n", CLI_OK_PROMPT );
+    return CLI_OK_STATUS;
+}
+
+int Cli_EchoString( int argc, char *argv[], void *context )
+{
+    if( argc != 2 )
+    {
+        Cli_Print( "%sGive one argument\n", CLI_FAIL_PROMPT );
+        return CLI_FAIL_STATUS;
+    }
+    (void)argv;
+    (void)context;
+    Cli_Print( "%s\"%s\"\n", CLI_OK_PROMPT, argv[1] );
+    return CLI_OK_STATUS;
+}
+
+int Cli_DisplayArgs( int argc, char *argv[], void *context )
+{
+    int i;
+    for( i = 0; i < argc; i++ )
+    {
+        Cli_Print( "argv[%d] --> \"%s\" \n", i, argv[i] );
+    }
+
+    (void)context;
+    return CLI_OK_STATUS;
+}
+
+int Cli_ClearScreen( int argc, char *argv[], void *context )
+{
+    (void)argc;
+    (void)argv;
+    (void)context;
+    // ANSI escape code to clear screen and move cursor to home
+    Cli_Print( "\033[2J\033[H" );
+    return CLI_OK_STATUS;
+}
+
+// #############################################################################
+// # Setup Console I/O
+// ###########################################################################
 
 int Console_PutCharacter( char c )
 {
@@ -19,11 +71,15 @@ char Console_GetCharacter( void )
 
 static Cli_Config_t  tCliCfg = { 0 };
 static Cli_Binding_t atCliBindings[] = {
-    { "hello", Cli_HelloWorld, "Say hello" },
-    { "display_args", Cli_DisplayArgs, "Displays the given cli arguments" },
-    { "clear", Cli_ClearScreen, "Clears the screen" },
-    { "echo", Cli_EchoString, "Echoes the given string" },
+    { "hello", Cli_HelloWorld, NULL, "Say hello" },
+    { "display_args", Cli_DisplayArgs, NULL, "Displays the given cli arguments" },
+    { "clear", Cli_ClearScreen, NULL, "Clears the screen" },
+    { "echo", Cli_EchoString, NULL, "Echoes the given string" },
 };
+
+// #############################################################################
+// # Main
+// ###########################################################################
 
 int main( void )
 {
