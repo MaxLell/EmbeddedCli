@@ -33,6 +33,7 @@
         }                                                                      \
     } while( 0 )
 
+
 /* #############################################################################
  * # static variables
  * ###########################################################################*/
@@ -41,7 +42,7 @@ static Cli_Config_t *g_tCli_Config = NULL;
 /* #############################################################################
  * # static function prototypes
  * ###########################################################################*/
-
+static void Cli_RegisterBinding( const Cli_Binding_t *const in_ptBinding );
 static void Cli_AssertFail( const char *msg );
 static void Cli_WriteCharacter( char c );
 static void Cli_EchoCharacter( char c );
@@ -57,42 +58,47 @@ static const Cli_Binding_t *Cli_FindCommand( const char *const in_pcCommandName 
  * # global function implementations
  * ###########################################################################*/
 
-void Cli_Initialize( Cli_Config_t *const inout_ptCfg )
+void Cli_Init( Cli_Config_t *const        inout_ptCfg,
+               const Cli_Binding_t *const in_atBinding, size_t tNofBindings,
+               int ( *in_pFnWriteCharacter )( char c ) )
 {
     { // Input Checks
         CLI_ASSERT( inout_ptCfg );
-        CLI_ASSERT( inout_ptCfg->acRxByteBuffer );
-        CLI_ASSERT( 0 == inout_ptCfg->tNofStoredCharacters );
-        CLI_ASSERT( inout_ptCfg->atCliCmdBindingsBuffer );
         CLI_ASSERT( inout_ptCfg->pFnWriteCharacter );
         CLI_ASSERT( false == inout_ptCfg->bIsInitialized );
-        CLI_ASSERT( inout_ptCfg->tNofBindings > 0 );
+        CLI_ASSERT( NULL == g_tCli_Config ); // only one instance allowed
+
+        CLI_ASSERT( in_atBinding );
+        // No need to check the individual bindings here, as this
+        // will be done in Cli_RegisterBinding()
+
+        CLI_ASSERT( in_pFnWriteCharacter );
     }
 
     inout_ptCfg->u32CfgCanaryStart = CLI_CANARY;
     inout_ptCfg->u32CfgCanaryEnd = CLI_CANARY;
     inout_ptCfg->u32BufferCanary = CLI_CANARY;
     inout_ptCfg->bIsInitialized = true;
+    inout_ptCfg->pFnWriteCharacter = in_pFnWriteCharacter;
+    inout_ptCfg->tNofStoredCharacters = 0;
+    inout_ptCfg->tNofBindings = 0;
 
-    // Iterate over the command bindings and check if they are valid
-    for( size_t i = 0; i < inout_ptCfg->tNofBindings; i++ )
+    // Register the command bindings
+    for( size_t i = 0; i < tNofBindings; i++ )
     {
-        const Cli_Binding_t *ptCmdBinding = &inout_ptCfg->atCliCmdBindingsBuffer[i];
-        CLI_ASSERT( ptCmdBinding->pcCmdName );
-        CLI_ASSERT( ptCmdBinding->pFnCmdHandler );
-        CLI_ASSERT( strlen( ptCmdBinding->pcCmdName ) < CLI_MAX_CMD_NAME_LENGTH );
-        CLI_ASSERT( strlen( ptCmdBinding->pcHelperString ) <
-                    CLI_MAX_HELPER_STRING_LENGTH );
+        Cli_RegisterBinding( &in_atBinding[i] );
     }
 
+    // Store the config locally in a static variable
     g_tCli_Config = inout_ptCfg;
 
+    // Reset the Rx Buffer and print the welcome message
     Cli_ResetRxBuffer();
     Cli_EchoString( "CLI was started - enter your commands (or enter "
                     "'help')\n" );
     Cli_EchoString( CLI_PROMPT );
 
-    CLI_ASSERT( inout_ptCfg == g_tCli_Config );
+    return;
 }
 
 void Cli_AddCharacter( Cli_Config_t *const inout_ptCfg, char in_cChar )
@@ -137,7 +143,7 @@ void Cli_AddCharacter( Cli_Config_t *const inout_ptCfg, char in_cChar )
     CLI_ASSERT( inout_ptCfg->tNofStoredCharacters < CLI_MAX_RX_BUFFER_SIZE );
 }
 
-void Cli_Process( Cli_Config_t *const inout_ptCfg )
+void Cli_ProcessBuffer( Cli_Config_t *const inout_ptCfg )
 {
     char *acArguments[CLI_MAX_NOF_ARGUMENTS] = { 0 };
     int   s32NofArguments = 0;
@@ -145,7 +151,6 @@ void Cli_Process( Cli_Config_t *const inout_ptCfg )
 
     { // Input Checks
         CLI_ASSERT( inout_ptCfg );
-        CLI_ASSERT( inout_ptCfg->acRxByteBuffer );
         CLI_ASSERT( g_tCli_Config == inout_ptCfg );
         CLI_ASSERT( inout_ptCfg->pFnWriteCharacter );
         CLI_ASSERT( true == inout_ptCfg->bIsInitialized );
@@ -213,6 +218,7 @@ void Cli_Process( Cli_Config_t *const inout_ptCfg )
     Cli_WritePrompt( inout_ptCfg );
 }
 
+
 void Cli_Print( const char *fmt, ... )
 {
     { // Input Checks
@@ -240,8 +246,6 @@ void Cli_HelpCommand( int argc, char *argv[] )
 {
     { // Input Checks
         CLI_ASSERT( g_tCli_Config );
-        CLI_ASSERT( g_tCli_Config->acRxByteBuffer );
-        CLI_ASSERT( g_tCli_Config->atCliCmdBindingsBuffer );
         CLI_ASSERT( g_tCli_Config->pFnWriteCharacter );
         CLI_ASSERT( g_tCli_Config->tNofBindings > 0 );
         CLI_ASSERT( true == g_tCli_Config->bIsInitialized );
@@ -264,9 +268,54 @@ void Cli_HelpCommand( int argc, char *argv[] )
     return;
 }
 
+
 /* #############################################################################
  * # static function implementations
  * ###########################################################################*/
+
+static void Cli_RegisterBinding( const Cli_Binding_t *const in_ptBinding )
+{
+    {
+        // Input Checks - inout_ptCfg
+        CLI_ASSERT( in_ptBinding );
+        CLI_ASSERT( in_ptBinding->pcCmdName );
+        CLI_ASSERT( in_ptBinding->pcHelperString );
+        CLI_ASSERT( in_ptBinding->pFnCmdHandler );
+    }
+
+    bool bBindingExists = false;
+    bool bBindingIsStored = false;
+
+    for( size_t i = 0; i < g_tCli_Config->tNofBindings; i++ )
+    {
+        const Cli_Binding_t *ptBinding = &g_tCli_Config->atCliCmdBindingsBuffer[i];
+        if( 0 == strncmp( ptBinding->pcCmdName, in_ptBinding->pcCmdName,
+                          CLI_MAX_CMD_NAME_LENGTH ) )
+        {
+            bBindingExists = true;
+            break;
+        }
+    }
+    CLI_ASSERT( false == bBindingExists );
+
+
+    if( g_tCli_Config->tNofBindings < CLI_MAX_NOF_CALLBACKS )
+    {
+        // Copy the binding into the buffer
+        size_t idx = g_tCli_Config->tNofBindings;
+        g_tCli_Config->atCliCmdBindingsBuffer[idx].pcCmdName = in_ptBinding->pcCmdName;
+        g_tCli_Config->atCliCmdBindingsBuffer[idx].pcHelperString =
+            in_ptBinding->pcHelperString;
+        g_tCli_Config->atCliCmdBindingsBuffer[idx].pFnCmdHandler =
+            in_ptBinding->pFnCmdHandler;
+        g_tCli_Config->tNofBindings++;
+        bBindingIsStored = true;
+    }
+
+    CLI_ASSERT( true == bBindingIsStored );
+
+    return;
+}
 
 static void Cli_WriteCharacter( char c )
 {
