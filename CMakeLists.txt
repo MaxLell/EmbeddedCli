@@ -7,12 +7,12 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 
 # Collect sources: main.c and all .c files in Cli/
 # Collect all .c sources in Cli/
-file(GLOB CLI_SOURCES "${CMAKE_SOURCE_DIR}/Cli/*.c")
+file(GLOB CLI_SOURCES "${CMAKE_SOURCE_DIR}/src/*.c")
 
 add_executable(firmware-cli ${CMAKE_SOURCE_DIR}/main.c ${CLI_SOURCES})
 
 # Include directories
-target_include_directories(firmware-cli PRIVATE ${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/Cli)
+target_include_directories(firmware-cli PRIVATE ${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/src)
 
 # Compiler warnings (optional)
 if (CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
