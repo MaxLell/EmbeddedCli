@@ -3,7 +3,7 @@
 #include <stdio.h>
 
 // #############################################################################
-// # Command Implementations
+// # Command Implementations - just for demonstration
 // ###########################################################################
 
 int Cli_HelloWorld( int argc, char *argv[], void *context );
@@ -55,6 +55,13 @@ int Cli_ClearScreen( int argc, char *argv[], void *context )
     return CLI_OK_STATUS;
 }
 
+static Cli_Binding_t atCliBindings[] = {
+    { "hello", Cli_HelloWorld, NULL, "Say hello" },
+    { "display_args", Cli_DisplayArgs, NULL, "Displays the given cli arguments" },
+    { "clear", Cli_ClearScreen, NULL, "Clears the screen" },
+    { "echo", Cli_EchoString, NULL, "Echoes the given string" },
+};
+
 // #############################################################################
 // # Setup Console I/O
 // ###########################################################################
@@ -69,17 +76,11 @@ char Console_GetCharacter( void )
     return (char)getchar();
 }
 
-static Cli_Config_t  tCliCfg = { 0 };
-static Cli_Binding_t atCliBindings[] = {
-    { "hello", Cli_HelloWorld, NULL, "Say hello" },
-    { "display_args", Cli_DisplayArgs, NULL, "Displays the given cli arguments" },
-    { "clear", Cli_ClearScreen, NULL, "Clears the screen" },
-    { "echo", Cli_EchoString, NULL, "Echoes the given string" },
-};
-
 // #############################################################################
 // # Main
 // ###########################################################################
+
+static Cli_Config_t tCliCfg = { 0 };
 
 int main( void )
 {

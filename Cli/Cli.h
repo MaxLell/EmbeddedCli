@@ -49,5 +49,4 @@ void Cli_AddCharacter( char in_cChar );
 
 void Cli_ProcessBuffer();
 
-
 void Cli_Print( const char *const fmt, ... );
