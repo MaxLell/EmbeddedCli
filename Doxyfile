@@ -1,0 +1,26 @@
+# Doxygen configuration for EmbeddedCLI
+PROJECT_NAME           = "EmbeddedCLI"
+PROJECT_BRIEF          = "Small embedded command line interface"
+OUTPUT_DIRECTORY       = docs
+GENERATE_HTML          = YES
+GENERATE_LATEX         = NO
+INPUT                  = src main.c
+FILE_PATTERNS          = *.c *.h
+RECURSIVE              = NO
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = YES
+EXTRACT_STATIC         = YES
+OPTIMIZE_OUTPUT_FOR_C  = YES
+QUIET                  = NO
+WARNINGS               = YES
+GENERATE_TREEVIEW      = YES
+
+# Encoding
+INPUT_ENCODING         = UTF-8
+
+# Misc
+GENERATE_TAGFILE       =
+GENERATE_XML           = NO
+
+# If you want to include README files
+USE_MDFILE_AS_MAINPAGE = README.md

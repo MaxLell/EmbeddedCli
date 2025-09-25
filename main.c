@@ -1,3 +1,12 @@
+/**
+ * @file main.c
+ * @brief Example program that initializes the CLI and registers demo commands.
+ *
+ * This file provides simple command implementations used to exercise the
+ * CLI library. It also contains the console input/output glue used by the
+ * example.
+ */
+
 #include "Cli.h"
 
 #include <stdio.h>
@@ -6,6 +15,7 @@
 // # Command Implementations - just for demonstration
 // ###########################################################################
 
+/** Demo command handlers used in the example program. */
 int Cli_HelloWorld( int argc, char *argv[], void *context );
 int Cli_EchoString( int argc, char *argv[], void *context );
 int Cli_DisplayArgs( int argc, char *argv[], void *context );
@@ -86,18 +96,17 @@ int main( void )
 {
     Cli_Init( &tCliCfg, Console_PutCharacter );
 
-
-    for( size_t i = 0; i < sizeof( atCliBindings ) / sizeof( atCliBindings[0] );
-         ++i )
+    for( size_t i = 0; i < CLI_GET_ARRAY_SIZE( atCliBindings ); i++ )
     {
         Cli_RegisterBinding( &atCliBindings[i] );
     }
 
+    Cli_UnregisterBinding( "echo" );
+
     while( 1 )
     {
         char c = Console_GetCharacter();
-        Cli_AddCharacter( c );
-        Cli_ProcessBuffer();
+        Cli_ReceiveCharacter( c );
     }
     return 0;
 }
