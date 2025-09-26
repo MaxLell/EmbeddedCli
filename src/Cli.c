@@ -154,6 +154,16 @@ static void Cli_HandleUnknownCommand( const char *const in_pcCmdName );
  */
 static int Cli_HelpCommand( int argc, char *argv[], void *context );
 
+/**
+ * @internal
+ * @brief Built-in clear screen command handler.
+ * @param argc Argument count. (unused)
+ * @param argv Argument vector. (unused)
+ * @param context User-provided context (unused).
+ * @return CLI_OK_STATUS on success.
+ */
+static int Cli_ClearScreen( int argc, char *argv[], void *context );
+
 
 /**
  * @internal
@@ -310,9 +320,17 @@ void Cli_Init( Cli_Config_t *const inout_ptCfg,
     g_tCli_Config->bIsInitialized = true;
 
     // Register the Help handler
-    Cli_Binding_t helpBinding = { "help", Cli_HelpCommand, NULL,
-                                  "Lists all commands" };
-    Cli_Register( &helpBinding );
+    Cli_Binding_t tHelpBinding = { "help", Cli_HelpCommand, NULL,
+                                   "Lists all commands" };
+    Cli_Register( &tHelpBinding );
+
+    // Register the Clear Screen handler
+    Cli_Binding_t tClearBinding = { "clear", Cli_ClearScreen, NULL,
+                                    "Clears the screen" };
+    Cli_Register( &tClearBinding );
+
+    // Clear the screen at startup
+    Cli_ClearScreen( 0, NULL, NULL );
 
     // Reset the Rx Buffer and print the welcome message
     Cli_ResetRxBuffer();
@@ -426,11 +444,26 @@ void Cli_Unregister( const char *const in_pcCmdName )
     return;
 }
 
+void Cli_ReceiveAndProcess( char in_cChar )
+{
+    Cli_Receive( in_cChar );
+    Cli_Process();
+}
+
 
 /* #############################################################################
  * # static function implementations
  * ###########################################################################*/
 
+static int Cli_ClearScreen( int argc, char *argv[], void *context )
+{
+    (void)argc;
+    (void)argv;
+    (void)context;
+    // ANSI escape code to clear screen and move cursor to home
+    Cli_Print( "\033[2J\033[H" );
+    return CLI_OK_STATUS;
+}
 
 static int Cli_HelpCommand( int argc, char *argv[], void *context )
 {

@@ -133,6 +133,12 @@ void Cli_Receive( char in_cChar );
 void Cli_Process( void );
 
 /**
+ * @brief Receive a character and process it immediately.
+ * @param in_cChar Character to receive and process.
+ */
+void Cli_ReceiveAndProcess( char in_cChar );
+
+/**
  * Print a formatted message through the CLI output function. Works like
  * printf but writes to the configured CLI output handler.
  *
