@@ -98,15 +98,16 @@ int main( void )
 
     for( size_t i = 0; i < CLI_GET_ARRAY_SIZE( atCliBindings ); i++ )
     {
-        Cli_RegisterBinding( &atCliBindings[i] );
+        Cli_Register( &atCliBindings[i] );
     }
 
-    Cli_UnregisterBinding( "echo" );
+    Cli_Unregister( "echo" );
 
     while( 1 )
     {
         char c = Console_GetCharacter();
-        Cli_ReceiveCharacter( c );
+        Cli_Receive( c );
+        Cli_Process();
     }
     return 0;
 }

@@ -109,7 +109,7 @@ static void Cli_EchoCharacter( char c );
  * @brief Return the last character stored in the RX buffer.
  * @return Last stored character.
  */
-static char Cli_GetLastEntryFromRxBuffer( void );
+static char Cli_GetLastReceivedCharacter( void );
 
 /**
  * @internal
@@ -154,18 +154,6 @@ static void Cli_HandleUnknownCommand( const char *const in_pcCmdName );
  */
 static int Cli_HelpCommand( int argc, char *argv[], void *context );
 
-/**
- * @internal
- * @brief Add a received character to the CLI RX buffer.
- * @param in_cChar Character to add.
- */
-static void Cli_AddCharToBuffer( char in_cChar );
-
-/**
- * @internal
- * @brief Parse and dispatch the current contents of the RX buffer.
- */
-static void Cli_ProcessCliBuffer( void );
 
 /**
  * @internal
@@ -179,158 +167,8 @@ static const Cli_Binding_t *Cli_FindCommand( const char *const in_pcCommandName 
  * # global function implementations
  * ###########################################################################*/
 
-void Cli_Init( Cli_Config_t *const         inout_ptCfg,
-               Cli_WriteCharacterHandler_t in_pFnWriteCharacter )
-{
-    { // Input Checks
-        CLI_ASSERT( inout_ptCfg );
-        CLI_ASSERT( false == inout_ptCfg->bIsInitialized );
-        CLI_ASSERT( NULL == g_tCli_Config ); // only one instance allowed
-        CLI_ASSERT( in_pFnWriteCharacter );
-    }
 
-    inout_ptCfg->u32CfgCanaryStart = CLI_CANARY;
-    inout_ptCfg->u32CfgCanaryEnd = CLI_CANARY;
-    inout_ptCfg->u32CanaryMid = CLI_CANARY;
-    inout_ptCfg->pFnWriteCharacter = in_pFnWriteCharacter;
-    inout_ptCfg->tNofStoredCharacters = 0;
-    inout_ptCfg->tNofBindings = 0;
-
-    // Store the config locally in a static variable
-    g_tCli_Config = inout_ptCfg;
-
-    g_tCli_Config->bIsInitialized = true;
-
-    // Register the Help handler
-    Cli_Binding_t helpBinding = { "help", Cli_HelpCommand, NULL,
-                                  "Lists all commands" };
-    Cli_RegisterBinding( &helpBinding );
-
-    // Reset the Rx Buffer and print the welcome message
-    Cli_ResetRxBuffer();
-    Cli_EchoString( "CLI was started - enter your commands (or enter "
-                    "'help')\n" );
-    Cli_EchoString( CLI_PROMPT );
-
-    return;
-}
-
-
-void Cli_Print( const char *fmt, ... )
-{
-    { // Input Checks
-        CLI_ASSERT( g_tCli_Config );
-        CLI_ASSERT( fmt );
-        CLI_ASSERT( g_tCli_Config->acRxByteBuffer );
-        CLI_ASSERT( g_tCli_Config->pFnWriteCharacter );
-        CLI_ASSERT( true == g_tCli_Config->bIsInitialized );
-        CLI_ASSERT( CLI_CANARY == g_tCli_Config->u32CfgCanaryStart );
-        CLI_ASSERT( CLI_CANARY == g_tCli_Config->u32CfgCanaryEnd );
-        CLI_ASSERT( CLI_CANARY == g_tCli_Config->u32CanaryMid );
-    }
-
-    char    buffer[128]; // Temporary buffer for formatted string
-    va_list args;
-    va_start( args, fmt );
-    vsnprintf( buffer, sizeof( buffer ), fmt, args );
-    va_end( args );
-
-    Cli_EchoString( buffer );
-    Cli_EchoCharacter( '\n' );
-}
-
-void Cli_RegisterBinding( const Cli_Binding_t *const in_ptBinding )
-{
-    {
-        // Input Checks - inout_ptCfg
-        CLI_ASSERT( in_ptBinding );
-        CLI_ASSERT( in_ptBinding->pcCmdName );
-        CLI_ASSERT( in_ptBinding->pcHelperString );
-        CLI_ASSERT( in_ptBinding->pFnCmdHandler );
-        CLI_ASSERT( g_tCli_Config );
-        CLI_ASSERT( g_tCli_Config->bIsInitialized );
-    }
-
-    bool bBindingExists = false;
-    bool bBindingIsStored = false;
-
-    for( size_t i = 0; i < g_tCli_Config->tNofBindings; i++ )
-    {
-        const Cli_Binding_t *ptBinding = &g_tCli_Config->atCliCmdBindingsBuffer[i];
-        if( 0 == strncmp( ptBinding->pcCmdName, in_ptBinding->pcCmdName,
-                          CLI_MAX_CMD_NAME_LENGTH ) )
-        {
-            bBindingExists = true;
-            break;
-        }
-    }
-    CLI_ASSERT( false == bBindingExists );
-
-
-    if( g_tCli_Config->tNofBindings < CLI_MAX_NOF_CALLBACKS )
-    {
-        //  Deep Copy the binding into the buffer
-        size_t idx = g_tCli_Config->tNofBindings;
-        memcpy( &g_tCli_Config->atCliCmdBindingsBuffer[idx], in_ptBinding,
-                sizeof( Cli_Binding_t ) );
-        g_tCli_Config->tNofBindings++;
-
-        // Mark that the binding was stored
-        bBindingIsStored = true;
-    }
-
-    CLI_ASSERT( true == bBindingIsStored );
-
-    return;
-}
-
-void Cli_ReceiveCharacter( char in_cChar )
-{
-    Cli_AddCharToBuffer( in_cChar );
-    Cli_ProcessCliBuffer();
-}
-
-void Cli_UnregisterBinding( const char *const in_pcCmdName )
-{
-    {
-        // Input Checks - inout_ptCfg
-        CLI_ASSERT( in_pcCmdName );
-        CLI_ASSERT( g_tCli_Config );
-        CLI_ASSERT( g_tCli_Config->bIsInitialized );
-    }
-
-    bool bBindingFound = false;
-
-    for( size_t i = 0; i < g_tCli_Config->tNofBindings; i++ )
-    {
-        Cli_Binding_t *ptBinding = &g_tCli_Config->atCliCmdBindingsBuffer[i];
-        if( 0 == strncmp( ptBinding->pcCmdName, in_pcCmdName,
-                          CLI_MAX_CMD_NAME_LENGTH ) )
-        {
-            bBindingFound = true;
-            // Shift all following bindings one position to the left
-            for( size_t j = i; j < g_tCli_Config->tNofBindings - 1; j++ )
-            {
-                memcpy( &g_tCli_Config->atCliCmdBindingsBuffer[j],
-                        &g_tCli_Config->atCliCmdBindingsBuffer[j + 1],
-                        sizeof( Cli_Binding_t ) );
-            }
-            g_tCli_Config->tNofBindings--;
-            break;
-        }
-    }
-    CLI_ASSERT( true == bBindingFound );
-
-    return;
-}
-
-
-/* #############################################################################
- * # static function implementations
- * ###########################################################################*/
-
-
-static void Cli_AddCharToBuffer( char in_cChar )
+void Cli_Receive( char in_cChar )
 {
     { // Input Checks
         CLI_ASSERT( g_tCli_Config );
@@ -354,24 +192,27 @@ static void Cli_AddCharToBuffer( char in_cChar )
         return;
     }
 
-    if( '\b' == in_cChar )
+    if( '\b' == in_cChar ) // Character delete (backspace)
     {
         if( g_tCli_Config->tNofStoredCharacters > 0 )
         {
             g_tCli_Config->tNofStoredCharacters--;
             size_t idx = g_tCli_Config->tNofStoredCharacters;
+
+            // Remove the last character (the one that was deleted)
             g_tCli_Config->acRxByteBuffer[idx] = '\0';
         }
-        return;
     }
-
-    size_t idx = g_tCli_Config->tNofStoredCharacters;
-    g_tCli_Config->acRxByteBuffer[idx] = in_cChar;
-    g_tCli_Config->tNofStoredCharacters++;
+    else // add the character to the buffer
+    {
+        size_t idx = g_tCli_Config->tNofStoredCharacters;
+        g_tCli_Config->acRxByteBuffer[idx] = in_cChar;
+        g_tCli_Config->tNofStoredCharacters++;
+    }
     CLI_ASSERT( g_tCli_Config->tNofStoredCharacters < CLI_MAX_RX_BUFFER_SIZE );
 }
 
-static void Cli_ProcessCliBuffer()
+void Cli_Process()
 {
     char *acArguments[CLI_MAX_NOF_ARGUMENTS] = { 0 };
     int   s32NofArguments = 0;
@@ -386,7 +227,7 @@ static void Cli_ProcessCliBuffer()
         CLI_ASSERT( CLI_CANARY == g_tCli_Config->u32CanaryMid );
     }
     { // Do nothing, if these conditions are not met
-        if( Cli_GetLastEntryFromRxBuffer() != '\n' &&
+        if( Cli_GetLastReceivedCharacter() != '\n' &&
             ( false == Cli_IsRxBufferFull() ) )
         {
             return;
@@ -445,6 +286,151 @@ static void Cli_ProcessCliBuffer()
     Cli_ResetRxBuffer();
     Cli_WritePrompt();
 }
+
+void Cli_Init( Cli_Config_t *const inout_ptCfg,
+               Cli_PutCharacter_fn in_pFnWriteCharacter )
+{
+    { // Input Checks
+        CLI_ASSERT( inout_ptCfg );
+        CLI_ASSERT( false == inout_ptCfg->bIsInitialized );
+        CLI_ASSERT( NULL == g_tCli_Config ); // only one instance allowed
+        CLI_ASSERT( in_pFnWriteCharacter );
+    }
+
+    inout_ptCfg->u32CfgCanaryStart = CLI_CANARY;
+    inout_ptCfg->u32CfgCanaryEnd = CLI_CANARY;
+    inout_ptCfg->u32CanaryMid = CLI_CANARY;
+    inout_ptCfg->pFnWriteCharacter = in_pFnWriteCharacter;
+    inout_ptCfg->tNofStoredCharacters = 0;
+    inout_ptCfg->tNofBindings = 0;
+
+    // Store the config locally in a static variable
+    g_tCli_Config = inout_ptCfg;
+
+    g_tCli_Config->bIsInitialized = true;
+
+    // Register the Help handler
+    Cli_Binding_t helpBinding = { "help", Cli_HelpCommand, NULL,
+                                  "Lists all commands" };
+    Cli_Register( &helpBinding );
+
+    // Reset the Rx Buffer and print the welcome message
+    Cli_ResetRxBuffer();
+    Cli_EchoString( "CLI was started - enter your commands (or enter "
+                    "'help')\n" );
+    Cli_EchoString( CLI_PROMPT );
+
+    return;
+}
+
+
+void Cli_Print( const char *fmt, ... )
+{
+    { // Input Checks
+        CLI_ASSERT( g_tCli_Config );
+        CLI_ASSERT( fmt );
+        CLI_ASSERT( g_tCli_Config->acRxByteBuffer );
+        CLI_ASSERT( g_tCli_Config->pFnWriteCharacter );
+        CLI_ASSERT( true == g_tCli_Config->bIsInitialized );
+        CLI_ASSERT( CLI_CANARY == g_tCli_Config->u32CfgCanaryStart );
+        CLI_ASSERT( CLI_CANARY == g_tCli_Config->u32CfgCanaryEnd );
+        CLI_ASSERT( CLI_CANARY == g_tCli_Config->u32CanaryMid );
+    }
+
+    char    buffer[128]; // Temporary buffer for formatted string
+    va_list args;
+    va_start( args, fmt );
+    vsnprintf( buffer, sizeof( buffer ), fmt, args );
+    va_end( args );
+
+    Cli_EchoString( buffer );
+    Cli_EchoCharacter( '\n' );
+}
+
+void Cli_Register( const Cli_Binding_t *const in_ptBinding )
+{
+    {
+        // Input Checks - inout_ptCfg
+        CLI_ASSERT( in_ptBinding );
+        CLI_ASSERT( in_ptBinding->pcCmdName );
+        CLI_ASSERT( in_ptBinding->pcHelperString );
+        CLI_ASSERT( in_ptBinding->pFnCmdHandler );
+        CLI_ASSERT( g_tCli_Config );
+        CLI_ASSERT( g_tCli_Config->bIsInitialized );
+    }
+
+    bool bBindingExists = false;
+    bool bBindingIsStored = false;
+
+    for( size_t i = 0; i < g_tCli_Config->tNofBindings; i++ )
+    {
+        const Cli_Binding_t *ptBinding = &g_tCli_Config->atCliCmdBindingsBuffer[i];
+        if( 0 == strncmp( ptBinding->pcCmdName, in_ptBinding->pcCmdName,
+                          CLI_MAX_CMD_NAME_LENGTH ) )
+        {
+            bBindingExists = true;
+            break;
+        }
+    }
+    CLI_ASSERT( false == bBindingExists );
+
+
+    if( g_tCli_Config->tNofBindings < CLI_MAX_NOF_CALLBACKS )
+    {
+        //  Deep Copy the binding into the buffer
+        size_t idx = g_tCli_Config->tNofBindings;
+        memcpy( &g_tCli_Config->atCliCmdBindingsBuffer[idx], in_ptBinding,
+                sizeof( Cli_Binding_t ) );
+        g_tCli_Config->tNofBindings++;
+
+        // Mark that the binding was stored
+        bBindingIsStored = true;
+    }
+
+    CLI_ASSERT( true == bBindingIsStored );
+
+    return;
+}
+
+void Cli_Unregister( const char *const in_pcCmdName )
+{
+    {
+        // Input Checks - inout_ptCfg
+        CLI_ASSERT( in_pcCmdName );
+        CLI_ASSERT( g_tCli_Config );
+        CLI_ASSERT( g_tCli_Config->bIsInitialized );
+    }
+
+    bool bBindingFound = false;
+
+    for( size_t i = 0; i < g_tCli_Config->tNofBindings; i++ )
+    {
+        Cli_Binding_t *ptBinding = &g_tCli_Config->atCliCmdBindingsBuffer[i];
+        if( 0 == strncmp( ptBinding->pcCmdName, in_pcCmdName,
+                          CLI_MAX_CMD_NAME_LENGTH ) )
+        {
+            bBindingFound = true;
+            // Shift all following bindings one position to the left
+            for( size_t j = i; j < g_tCli_Config->tNofBindings - 1; j++ )
+            {
+                memcpy( &g_tCli_Config->atCliCmdBindingsBuffer[j],
+                        &g_tCli_Config->atCliCmdBindingsBuffer[j + 1],
+                        sizeof( Cli_Binding_t ) );
+            }
+            g_tCli_Config->tNofBindings--;
+            break;
+        }
+    }
+    CLI_ASSERT( true == bBindingFound );
+
+    return;
+}
+
+
+/* #############################################################################
+ * # static function implementations
+ * ###########################################################################*/
+
 
 static int Cli_HelpCommand( int argc, char *argv[], void *context )
 {
@@ -514,7 +500,7 @@ static void Cli_EchoCharacter( char c )
  *
  * @return last character previously stored in the rx buffer.
  */
-static char Cli_GetLastEntryFromRxBuffer( void )
+static char Cli_GetLastReceivedCharacter( void )
 {
     { // Input Checks
         CLI_ASSERT( g_tCli_Config );

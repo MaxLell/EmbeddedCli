@@ -53,7 +53,7 @@ typedef int ( *Cli_CommandHandler_t )( int argc, char *argv[], void *context );
  * Implementations should return a non-negative value on success or a
  * negative value on error (matches putchar/putc behaviour).
  */
-typedef int ( *Cli_WriteCharacterHandler_t )( char c );
+typedef int ( *Cli_PutCharacter_fn )( char c );
 
 /**
  * Binding structure used to register a command with the CLI.
@@ -80,9 +80,9 @@ typedef struct Cli_Binding
  */
 typedef struct
 {
-    uint32_t                    u32CfgCanaryStart; /**< internal canary */
-    Cli_WriteCharacterHandler_t pFnWriteCharacter; /**< output function */
-    bool                        bIsInitialized;    /**< initialization flag */
+    uint32_t            u32CfgCanaryStart; /**< internal canary */
+    Cli_PutCharacter_fn pFnWriteCharacter; /**< output function */
+    bool                bIsInitialized;    /**< initialization flag */
 
     size_t   tNofStoredCharacters; /**< count of bytes in rx buffer */
     char     acRxByteBuffer[CLI_MAX_RX_BUFFER_SIZE]; /**< input buffer */
@@ -102,8 +102,8 @@ typedef struct
  * @param[in]     in_pFnWriteCharacter Function used to write single characters
  * (e.g. putchar).
  */
-void Cli_Init( Cli_Config_t *const         inout_ptCfg,
-               Cli_WriteCharacterHandler_t in_pFnWriteCharacter );
+void Cli_Init( Cli_Config_t *const inout_ptCfg,
+               Cli_PutCharacter_fn in_pFnWriteCharacter );
 
 /**
  * Register a command binding with the CLI. The binding is copied into the
@@ -112,22 +112,25 @@ void Cli_Init( Cli_Config_t *const         inout_ptCfg,
  *
  * @param[in] in_ptBinding Pointer to the binding to register.
  */
-void Cli_RegisterBinding( const Cli_Binding_t *const in_ptBinding );
+void Cli_Register( const Cli_Binding_t *const in_ptBinding );
 
 /**
  * Unregister a previously registered command by name.
  *
  * @param[in] in_pcCmdName NUL-terminated name of the command to remove.
  */
-void Cli_UnregisterBinding( const char *const in_pcCmdName );
+void Cli_Unregister( const char *const in_pcCmdName );
 
 /**
- * Feed one received character into the CLI state machine. Typically called
- * from the console/uart receive ISR or a polling loop.
- *
- * @param[in] in_cChar Received character.
+ * @brief Add a received character to the CLI RX buffer.
+ * @param in_cChar Character to add.
  */
-void Cli_ReceiveCharacter( char in_cChar );
+void Cli_Receive( char in_cChar );
+
+/**
+ * @brief Parse and dispatch the current contents of the RX buffer.
+ */
+void Cli_Process( void );
 
 /**
  * Print a formatted message through the CLI output function. Works like
