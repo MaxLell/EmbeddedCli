@@ -1,0 +1,3 @@
+[submodule "docs/coding_standard"]
+	path = docs/coding_standard
+	url = https://github.com/MaxLell/c-code-style.git
