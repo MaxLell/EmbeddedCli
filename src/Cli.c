@@ -1,7 +1,6 @@
 #include "Cli.h"
 
 #include <stdarg.h>
-#include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
@@ -9,6 +8,8 @@
 /* #############################################################################
  * # Defines
  * ###########################################################################*/
+
+typedef uint8_t cli_bool_t;
 
 #define CLI_MAX_NOF_ARGUMENTS    (16)
 #define CLI_PROMPT               "-------- \n> "
@@ -46,7 +47,7 @@ static void prv_write_cli_prompt(void);
 static void prv_write_cmd_unknown(const char* const in_cmd_name);
 
 static void prv_reset_rx_buffer(void);
-static uint8_t prv_is_rx_buffer_full(void);
+static cli_bool_t prv_is_rx_buffer_full(void);
 static char prv_get_last_recv_char_from_rx_buffer(void);
 
 static const cli_binding_t* prv_find_cmd(const char* const in_cmd_name);
@@ -236,19 +237,19 @@ void cli_register(const cli_binding_t* const in_cmd_binding)
         CLI_ASSERT(CLI_CANARY == g_cli_cfg->end_canary_word);
     }
 
-    uint8_t bBindingExists = false;
-    uint8_t bBindingIsStored = false;
+    uint8_t does_binding_exist = CLI_FALSE;
+    uint8_t is_binding_stored = CLI_FALSE;
 
     for (size_t i = 0; i < g_cli_cfg->nof_stored_cmd_bindings; i++)
     {
         const cli_binding_t* cmd_binding = &g_cli_cfg->cmd_bindings_buffer[i];
         if (0 == strncmp(cmd_binding->cmd_name_string, in_cmd_binding->cmd_name_string, CLI_MAX_CMD_NAME_LENGTH))
         {
-            bBindingExists = true;
+            does_binding_exist = true;
             break;
         }
     }
-    CLI_ASSERT(false == bBindingExists);
+    CLI_ASSERT(false == does_binding_exist);
 
     if (g_cli_cfg->nof_stored_cmd_bindings < CLI_MAX_NOF_CALLBACKS)
     {
@@ -258,10 +259,10 @@ void cli_register(const cli_binding_t* const in_cmd_binding)
         g_cli_cfg->nof_stored_cmd_bindings++;
 
         // Mark that the binding was stored
-        bBindingIsStored = true;
+        is_binding_stored = true;
     }
 
-    CLI_ASSERT(true == bBindingIsStored);
+    CLI_ASSERT(true == is_binding_stored);
 
     return;
 }
@@ -278,14 +279,14 @@ void cli_unregister(const char* const in_cmd_name)
         CLI_ASSERT(CLI_CANARY == g_cli_cfg->end_canary_word);
     }
 
-    bool bBindingFound = false;
+    uint8_t is_binding_found = CLI_FALSE;
 
     for (size_t i = 0; i < g_cli_cfg->nof_stored_cmd_bindings; i++)
     {
         cli_binding_t* cmd_binding = &g_cli_cfg->cmd_bindings_buffer[i];
         if (0 == strncmp(cmd_binding->cmd_name_string, in_cmd_name, CLI_MAX_CMD_NAME_LENGTH))
         {
-            bBindingFound = true;
+            is_binding_found = CLI_TRUE;
             // Shift all following bindings one position to the left
             for (size_t j = i; j < g_cli_cfg->nof_stored_cmd_bindings - 1; j++)
             {
@@ -296,7 +297,7 @@ void cli_unregister(const char* const in_cmd_name)
             break;
         }
     }
-    CLI_ASSERT(true == bBindingFound);
+    CLI_ASSERT(CLI_TRUE == is_binding_found);
 
     return;
 }
@@ -414,7 +415,7 @@ static void prv_reset_rx_buffer()
     g_cli_cfg->nof_stored_chars_in_rx_buffer = 0;
 }
 
-static uint8_t prv_is_rx_buffer_full()
+static cli_bool_t prv_is_rx_buffer_full()
 {
     { // Input Checks
         CLI_ASSERT(g_cli_cfg);
