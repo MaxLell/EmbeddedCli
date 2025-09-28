@@ -16,12 +16,11 @@
 // ###########################################################################
 
 /** Demo command handlers used in the example program. */
-int Cli_HelloWorld(int argc, char* argv[], void* context);
-int Cli_EchoString(int argc, char* argv[], void* context);
-int Cli_DisplayArgs(int argc, char* argv[], void* context);
-int prv_cmd_handler_clear_screen(int argc, char* argv[], void* context);
+int cmd_hello_world(int argc, char* argv[], void* context);
+int cmd_echo_string(int argc, char* argv[], void* context);
+int cmd_display_args(int argc, char* argv[], void* context);
 
-int Cli_HelloWorld(int argc, char* argv[], void* context)
+int cmd_hello_world(int argc, char* argv[], void* context)
 {
     (void)argc;
     (void)argv;
@@ -30,7 +29,7 @@ int Cli_HelloWorld(int argc, char* argv[], void* context)
     return CLI_OK_STATUS;
 }
 
-int Cli_EchoString(int argc, char* argv[], void* context)
+int cmd_echo_string(int argc, char* argv[], void* context)
 {
     if (argc != 2)
     {
@@ -43,7 +42,7 @@ int Cli_EchoString(int argc, char* argv[], void* context)
     return CLI_OK_STATUS;
 }
 
-int Cli_DisplayArgs(int argc, char* argv[], void* context)
+int cmd_display_args(int argc, char* argv[], void* context)
 {
     int i;
     for (i = 0; i < argc; i++)
@@ -56,28 +55,28 @@ int Cli_DisplayArgs(int argc, char* argv[], void* context)
 }
 
 static cli_binding_t atCliBindings[] = {
-    {"hello", Cli_HelloWorld, NULL, "Say hello"},
-    {"display_args", Cli_DisplayArgs, NULL, "Displays the given cli arguments"},
-    {"echo", Cli_EchoString, NULL, "Echoes the given string"},
+    {"hello", cmd_hello_world, NULL, "Say hello"},
+    {"args", cmd_display_args, NULL, "Displays the given cli arguments"},
+    {"echo", cmd_echo_string, NULL, "Echoes the given string"},
 };
 
 // #############################################################################
 // # Setup Console I/O
 // ###########################################################################
 
-int Console_PutCharacter(char c) { return putchar(c); }
+int console_put_char(char in_char) { return putchar(in_char); }
 
-char Console_GetCharacter(void) { return (char)getchar(); }
+char console_get_char(void) { return (char)getchar(); }
 
 // #############################################################################
 // # Main
 // ###########################################################################
 
-static cli_cfg_t tCliCfg = {0};
+static cli_cfg_t g_cli_cfg = {0};
 
 int main(void)
 {
-    cli_init(&tCliCfg, Console_PutCharacter);
+    cli_init(&g_cli_cfg, console_put_char);
 
     for (size_t i = 0; i < CLI_GET_ARRAY_SIZE(atCliBindings); i++)
     {
@@ -88,7 +87,7 @@ int main(void)
 
     while (1)
     {
-        char c = Console_GetCharacter();
+        char c = console_get_char();
         cli_receive(c);
         cli_process();
     }
