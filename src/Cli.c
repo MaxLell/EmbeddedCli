@@ -65,7 +65,7 @@ void cli_init(cli_cfg_t* const inout_module_cfg, cli_put_char_fn in_put_char_fn)
 {
     { // Input Checks
         CLI_ASSERT(inout_module_cfg);
-        CLI_ASSERT(false == inout_module_cfg->is_initialized);
+        CLI_ASSERT(CLI_FALSE == inout_module_cfg->is_initialized);
         CLI_ASSERT(NULL == g_cli_cfg); // only one instance allowed
         CLI_ASSERT(in_put_char_fn);
     }
@@ -83,7 +83,7 @@ void cli_init(cli_cfg_t* const inout_module_cfg, cli_put_char_fn in_put_char_fn)
     // Store the config locally in a static variable
     g_cli_cfg = inout_module_cfg;
 
-    g_cli_cfg->is_initialized = true;
+    g_cli_cfg->is_initialized = CLI_TRUE;
 
     cli_register(&help_cmd_binding);
     cli_register(&clear_cmd_binding);
@@ -107,7 +107,7 @@ void cli_receive(char in_char)
         CLI_ASSERT(g_cli_cfg->rx_char_buffer);
         CLI_ASSERT(g_cli_cfg->put_char_fn);
         CLI_ASSERT(g_cli_cfg->nof_stored_chars_in_rx_buffer < CLI_MAX_RX_BUFFER_SIZE);
-        CLI_ASSERT(true == g_cli_cfg->is_initialized);
+        CLI_ASSERT(CLI_TRUE == g_cli_cfg->is_initialized);
         CLI_ASSERT(CLI_CANARY == g_cli_cfg->start_canary_word);
         CLI_ASSERT(CLI_CANARY == g_cli_cfg->mid_canary_word);
         CLI_ASSERT(CLI_CANARY == g_cli_cfg->end_canary_word);
@@ -118,7 +118,7 @@ void cli_receive(char in_char)
         return;
     }
 
-    if (true == prv_is_rx_buffer_full())
+    if (CLI_TRUE == prv_is_rx_buffer_full())
     {
         prv_write_string("Buffer is full");
         return;
@@ -153,13 +153,13 @@ void cli_process()
     { // Input Checks
         CLI_ASSERT(g_cli_cfg);
         CLI_ASSERT(g_cli_cfg->put_char_fn);
-        CLI_ASSERT(true == g_cli_cfg->is_initialized);
+        CLI_ASSERT(CLI_TRUE == g_cli_cfg->is_initialized);
         CLI_ASSERT(CLI_CANARY == g_cli_cfg->start_canary_word);
         CLI_ASSERT(CLI_CANARY == g_cli_cfg->mid_canary_word);
         CLI_ASSERT(CLI_CANARY == g_cli_cfg->end_canary_word);
     }
     { // Do nothing, if these conditions are not met
-        if (prv_get_last_recv_char_from_rx_buffer() != '\n' && (false == prv_is_rx_buffer_full()))
+        if (prv_get_last_recv_char_from_rx_buffer() != '\n' && (CLI_FALSE == prv_is_rx_buffer_full()))
         {
             return;
         }
@@ -245,11 +245,11 @@ void cli_register(const cli_binding_t* const in_cmd_binding)
         const cli_binding_t* cmd_binding = &g_cli_cfg->cmd_bindings_buffer[i];
         if (0 == strncmp(cmd_binding->cmd_name_string, in_cmd_binding->cmd_name_string, CLI_MAX_CMD_NAME_LENGTH))
         {
-            does_binding_exist = true;
+            does_binding_exist = CLI_TRUE;
             break;
         }
     }
-    CLI_ASSERT(false == does_binding_exist);
+    CLI_ASSERT(CLI_FALSE == does_binding_exist);
 
     if (g_cli_cfg->nof_stored_cmd_bindings < CLI_MAX_NOF_CALLBACKS)
     {
@@ -259,10 +259,10 @@ void cli_register(const cli_binding_t* const in_cmd_binding)
         g_cli_cfg->nof_stored_cmd_bindings++;
 
         // Mark that the binding was stored
-        is_binding_stored = true;
+        is_binding_stored = CLI_TRUE;
     }
 
-    CLI_ASSERT(true == is_binding_stored);
+    CLI_ASSERT(CLI_TRUE == is_binding_stored);
 
     return;
 }
@@ -309,7 +309,7 @@ void cli_print(const char* fmt, ...)
         CLI_ASSERT(fmt);
         CLI_ASSERT(g_cli_cfg->rx_char_buffer);
         CLI_ASSERT(g_cli_cfg->put_char_fn);
-        CLI_ASSERT(true == g_cli_cfg->is_initialized);
+        CLI_ASSERT(CLI_TRUE == g_cli_cfg->is_initialized);
         CLI_ASSERT(CLI_CANARY == g_cli_cfg->start_canary_word);
         CLI_ASSERT(CLI_CANARY == g_cli_cfg->mid_canary_word);
         CLI_ASSERT(CLI_CANARY == g_cli_cfg->end_canary_word);
@@ -336,7 +336,7 @@ static void prv_write_string(const char* in_string)
         CLI_ASSERT(in_string);
         CLI_ASSERT(g_cli_cfg->rx_char_buffer);
         CLI_ASSERT(g_cli_cfg->put_char_fn);
-        CLI_ASSERT(true == g_cli_cfg->is_initialized);
+        CLI_ASSERT(CLI_TRUE == g_cli_cfg->is_initialized);
     }
     for (const char* current_char = in_string; *current_char != '\0'; current_char++)
     {
@@ -350,7 +350,7 @@ static void prv_write_char(char in_char)
         CLI_ASSERT(g_cli_cfg);
         CLI_ASSERT(g_cli_cfg->put_char_fn);
         CLI_ASSERT(g_cli_cfg->rx_char_buffer);
-        CLI_ASSERT(true == g_cli_cfg->is_initialized);
+        CLI_ASSERT(CLI_TRUE == g_cli_cfg->is_initialized);
     }
     if ('\n' == in_char) // User pressed Enter
     {
@@ -374,7 +374,7 @@ static void prv_put_char(char in_char)
     { // Input Checks
         CLI_ASSERT(g_cli_cfg);
         CLI_ASSERT(g_cli_cfg->put_char_fn);
-        CLI_ASSERT(true == g_cli_cfg->is_initialized);
+        CLI_ASSERT(CLI_TRUE == g_cli_cfg->is_initialized);
     }
     g_cli_cfg->put_char_fn(in_char);
 }
@@ -384,7 +384,7 @@ static void prv_write_cli_prompt()
     { // Input Checks
         CLI_ASSERT(g_cli_cfg);
         CLI_ASSERT(g_cli_cfg->rx_char_buffer);
-        CLI_ASSERT(true == g_cli_cfg->is_initialized);
+        CLI_ASSERT(CLI_TRUE == g_cli_cfg->is_initialized);
     }
     prv_write_string(CLI_PROMPT);
 }
@@ -396,7 +396,7 @@ static void prv_write_cmd_unknown(const char* const in_cmd_name)
         CLI_ASSERT(in_cmd_name);
         CLI_ASSERT(g_cli_cfg->rx_char_buffer);
         CLI_ASSERT(g_cli_cfg->put_char_fn);
-        CLI_ASSERT(true == g_cli_cfg->is_initialized);
+        CLI_ASSERT(CLI_TRUE == g_cli_cfg->is_initialized);
     }
     prv_write_string(CLI_FAIL_PROMPT "Unknown command: ");
     prv_write_string(in_cmd_name);
@@ -409,7 +409,7 @@ static void prv_reset_rx_buffer()
     { // Input Checks
         CLI_ASSERT(g_cli_cfg);
         CLI_ASSERT(g_cli_cfg->rx_char_buffer);
-        CLI_ASSERT(true == g_cli_cfg->is_initialized);
+        CLI_ASSERT(CLI_TRUE == g_cli_cfg->is_initialized);
     }
     memset(g_cli_cfg->rx_char_buffer, 0, CLI_MAX_RX_BUFFER_SIZE);
     g_cli_cfg->nof_stored_chars_in_rx_buffer = 0;
@@ -420,7 +420,7 @@ static cli_bool_t prv_is_rx_buffer_full()
     { // Input Checks
         CLI_ASSERT(g_cli_cfg);
         CLI_ASSERT(g_cli_cfg->rx_char_buffer);
-        CLI_ASSERT(true == g_cli_cfg->is_initialized);
+        CLI_ASSERT(CLI_TRUE == g_cli_cfg->is_initialized);
     }
     return (g_cli_cfg->nof_stored_chars_in_rx_buffer >= CLI_MAX_RX_BUFFER_SIZE);
 }
@@ -430,7 +430,7 @@ static char prv_get_last_recv_char_from_rx_buffer(void)
     { // Input Checks
         CLI_ASSERT(g_cli_cfg);
         CLI_ASSERT(g_cli_cfg->rx_char_buffer);
-        CLI_ASSERT(true == g_cli_cfg->is_initialized);
+        CLI_ASSERT(CLI_TRUE == g_cli_cfg->is_initialized);
     }
     return g_cli_cfg->rx_char_buffer[g_cli_cfg->nof_stored_chars_in_rx_buffer - 1];
 }
@@ -443,7 +443,7 @@ static const cli_binding_t* prv_find_cmd(const char* const in_cmd_name)
         CLI_ASSERT(g_cli_cfg->rx_char_buffer);
         CLI_ASSERT(g_cli_cfg->cmd_bindings_buffer);
         CLI_ASSERT(g_cli_cfg->nof_stored_cmd_bindings > 0);
-        CLI_ASSERT(true == g_cli_cfg->is_initialized);
+        CLI_ASSERT(CLI_TRUE == g_cli_cfg->is_initialized);
     }
 
     for (size_t idx = 0; idx < g_cli_cfg->nof_stored_cmd_bindings; ++idx)
@@ -472,7 +472,7 @@ static int prv_cmd_handler_help(int argc, char* argv[], void* context)
     { // Input Checks
         CLI_ASSERT(g_cli_cfg);
         CLI_ASSERT(g_cli_cfg->put_char_fn);
-        CLI_ASSERT(true == g_cli_cfg->is_initialized);
+        CLI_ASSERT(CLI_TRUE == g_cli_cfg->is_initialized);
     }
     prv_write_string("\n");
 
