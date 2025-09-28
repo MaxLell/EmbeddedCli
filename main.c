@@ -55,10 +55,19 @@ int cmd_display_args(int argc, char* argv[], void* context)
     return CLI_OK_STATUS;
 }
 
+int cmd_dummy(int argc, char* argv[], void* context)
+{
+    (void)argc;
+    (void)argv;
+    (void)context;
+    return CLI_OK_STATUS;
+}
+
 static cli_binding_t cli_bindings[] = {
     {"hello", cmd_hello_world, NULL, "Say hello"},
     {"args", cmd_display_args, NULL, "Displays the given cli arguments"},
     {"echo", cmd_echo_string, NULL, "Echoes the given string"},
+    {"dummy", cmd_dummy, NULL, "dummy stuffens"},
 };
 
 // #############################################################################
@@ -84,7 +93,8 @@ static cli_cfg_t g_cli_cfg = {0};
 
 int main(void)
 {
-    custom_assert_register(assert_failed);
+    // sets up the assert with its assert_failed function
+    custom_assert_init(assert_failed);
 
     cli_init(&g_cli_cfg, console_put_char);
 
@@ -93,7 +103,8 @@ int main(void)
         cli_register(&cli_bindings[i]);
     }
 
-    cli_unregister("echo");
+    // remove the "dummy" command from the internally stored cli bindings
+    cli_unregister("dummy");
 
     while (1)
     {

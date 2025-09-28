@@ -29,7 +29,7 @@ static void mock_assert_callback(const char* file, uint32_t line, const char* ex
 void setUp(void)
 {
     // Register mock assert callback
-    custom_assert_register(mock_assert_callback);
+    custom_assert_init(mock_assert_callback);
 
     // Reset the assert trigger
     last_assert_trigger.last_assert_file = NULL;
@@ -40,7 +40,7 @@ void setUp(void)
 void tearDown(void)
 {
     // Unregister assert callback
-    custom_assert_unregister();
+    custom_assert_deinit();
 }
 
 void test_dummy(void) {}
