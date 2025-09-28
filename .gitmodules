@@ -1,3 +1,6 @@
 [submodule "docs/coding_standard"]
 	path = docs/coding_standard
 	url = https://github.com/MaxLell/c-code-style.git
+[submodule "utils/embedded_utils"]
+	path = utils/embedded_utils
+	url = https://github.com/MaxLell/embedded_utils.git

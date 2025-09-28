@@ -8,6 +8,7 @@
  */
 
 #include "Cli.h"
+#include "custom_assert.h"
 
 #include <stdio.h>
 
@@ -68,6 +69,13 @@ int console_put_char(char in_char) { return putchar(in_char); }
 
 char console_get_char(void) { return (char)getchar(); }
 
+void assert_failed(const char* file, uint32_t line, const char* expr)
+{
+    printf("ASSERT failed: %s, file: %s, line: %u\n", expr, file, line);
+    while (1)
+        ;
+}
+
 // #############################################################################
 // # Main
 // ###########################################################################
@@ -76,6 +84,8 @@ static cli_cfg_t g_cli_cfg = {0};
 
 int main(void)
 {
+    custom_assert_register(assert_failed);
+
     cli_init(&g_cli_cfg, console_put_char);
 
     for (size_t i = 0; i < CLI_GET_ARRAY_SIZE(cli_bindings); i++)

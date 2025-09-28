@@ -9,10 +9,17 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 # Collect all .c sources in Cli/
 file(GLOB CLI_SOURCES "${CMAKE_SOURCE_DIR}/src/*.c")
 
-add_executable(firmware-cli ${CMAKE_SOURCE_DIR}/main.c ${CLI_SOURCES})
+# Collect custom_assert sources
+file(GLOB CUSTOM_ASSERT_SOURCES "${CMAKE_SOURCE_DIR}/utils/embedded_utils/utils/*.c")
+
+add_executable(firmware-cli ${CMAKE_SOURCE_DIR}/main.c ${CLI_SOURCES} ${CUSTOM_ASSERT_SOURCES})
 
 # Include directories
-target_include_directories(firmware-cli PRIVATE ${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/src)
+target_include_directories(firmware-cli PRIVATE 
+    ${CMAKE_SOURCE_DIR} 
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/utils/embedded_utils/utils
+)
 
 # Compiler warnings (optional)
 if (CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
