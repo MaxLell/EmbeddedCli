@@ -54,7 +54,7 @@ int cmd_display_args(int argc, char* argv[], void* context)
     return CLI_OK_STATUS;
 }
 
-static cli_binding_t atCliBindings[] = {
+static cli_binding_t cli_bindings[] = {
     {"hello", cmd_hello_world, NULL, "Say hello"},
     {"args", cmd_display_args, NULL, "Displays the given cli arguments"},
     {"echo", cmd_echo_string, NULL, "Echoes the given string"},
@@ -78,9 +78,9 @@ int main(void)
 {
     cli_init(&g_cli_cfg, console_put_char);
 
-    for (size_t i = 0; i < CLI_GET_ARRAY_SIZE(atCliBindings); i++)
+    for (size_t i = 0; i < CLI_GET_ARRAY_SIZE(cli_bindings); i++)
     {
-        cli_register(&atCliBindings[i]);
+        cli_register(&cli_bindings[i]);
     }
 
     cli_unregister("echo");
