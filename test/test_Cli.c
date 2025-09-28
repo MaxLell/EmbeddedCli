@@ -1,8 +1,8 @@
-#include "unity.h"
-#include "Cli.h"
 #include <string.h>
+#include "Cli.h"
+#include "unity.h"
 
-static Cli_Config_t g_testCliConfig;
+static cli_cfg_t g_testCliConfig;
 static char g_outputBuffer[256];
 static size_t g_outputIndex = 0;
 
@@ -18,7 +18,7 @@ static int test_putchar(char c)
 }
 
 // Test command handler
-static int test_command_handler(int argc, char *argv[], void *context)
+static int test_command_handler(int argc, char* argv[], void* context)
 {
     (void)argc;
     (void)argv;
@@ -42,26 +42,23 @@ void tearDown(void)
 void test_Cli_Init_should_InitializeConfigStructure(void)
 {
     // Act
-    Cli_Init(&g_testCliConfig, test_putchar);
+    cli_init(&g_testCliConfig, test_putchar);
 
     // Assert
-    TEST_ASSERT_NOT_NULL(g_testCliConfig.pFnWriteCharacter);
-    TEST_ASSERT_TRUE(g_testCliConfig.bIsInitialized);
+    TEST_ASSERT_NOT_NULL(g_testCliConfig.put_char_fn);
+    TEST_ASSERT_TRUE(g_testCliConfig.is_initialized);
 }
 
 void test_Cli_Register_should_AddCommandBinding(void)
 {
     // Arrange
-    Cli_Init(&g_testCliConfig, test_putchar);
+    cli_init(&g_testCliConfig, test_putchar);
 
-    Cli_Binding_t testBinding = {
-        .pcCmdName = "test",
-        .pFnCmdHandler = test_command_handler,
-        .pContext = NULL,
-        .pcHelperString = "Test command"};
+    cli_binding_t testBinding = {
+        .cmd_name_string = "test", .cmd_handler_fn = test_command_handler, .context = NULL, .cmd_helper_string = "Test command"};
 
     // Act
-    Cli_Register(&testBinding);
+    cli_register(&testBinding);
 
     // Assert - This test would need access to internal state
     // For now, we just check that no crash occurs
@@ -71,10 +68,10 @@ void test_Cli_Register_should_AddCommandBinding(void)
 void test_Cli_Print_should_OutputFormattedString(void)
 {
     // Arrange
-    Cli_Init(&g_testCliConfig, test_putchar);
+    cli_init(&g_testCliConfig, test_putchar);
 
     // Act
-    Cli_Print("Hello %s", "World");
+    cli_print("Hello %s", "World");
 
     // Assert
     TEST_ASSERT_EQUAL_STRING("Hello World", g_outputBuffer);
