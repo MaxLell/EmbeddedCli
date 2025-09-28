@@ -108,8 +108,8 @@ void cli_receive(char in_char)
         CLI_ASSERT(g_cli_cfg->nof_stored_chars_in_rx_buffer < CLI_MAX_RX_BUFFER_SIZE);
         CLI_ASSERT(true == g_cli_cfg->is_initialized);
         CLI_ASSERT(CLI_CANARY == g_cli_cfg->start_canary_word);
-        CLI_ASSERT(CLI_CANARY == g_cli_cfg->end_canary_word);
         CLI_ASSERT(CLI_CANARY == g_cli_cfg->mid_canary_word);
+        CLI_ASSERT(CLI_CANARY == g_cli_cfg->end_canary_word);
     }
 
     if ('\r' == in_char)
@@ -154,8 +154,8 @@ void cli_process()
         CLI_ASSERT(g_cli_cfg->put_char_fn);
         CLI_ASSERT(true == g_cli_cfg->is_initialized);
         CLI_ASSERT(CLI_CANARY == g_cli_cfg->start_canary_word);
-        CLI_ASSERT(CLI_CANARY == g_cli_cfg->end_canary_word);
         CLI_ASSERT(CLI_CANARY == g_cli_cfg->mid_canary_word);
+        CLI_ASSERT(CLI_CANARY == g_cli_cfg->end_canary_word);
     }
     { // Do nothing, if these conditions are not met
         if (prv_get_last_recv_char_from_rx_buffer() != '\n' && (false == prv_is_rx_buffer_full()))
@@ -231,6 +231,9 @@ void cli_register(const cli_binding_t* const in_cmd_binding)
         CLI_ASSERT(in_cmd_binding->cmd_handler_fn);
         CLI_ASSERT(g_cli_cfg);
         CLI_ASSERT(g_cli_cfg->is_initialized);
+        CLI_ASSERT(CLI_CANARY == g_cli_cfg->start_canary_word);
+        CLI_ASSERT(CLI_CANARY == g_cli_cfg->mid_canary_word);
+        CLI_ASSERT(CLI_CANARY == g_cli_cfg->end_canary_word);
     }
 
     uint8_t bBindingExists = false;
@@ -238,8 +241,8 @@ void cli_register(const cli_binding_t* const in_cmd_binding)
 
     for (size_t i = 0; i < g_cli_cfg->nof_stored_cmd_bindings; i++)
     {
-        const cli_binding_t* ptBinding = &g_cli_cfg->cmd_bindings_buffer[i];
-        if (0 == strncmp(ptBinding->cmd_name_string, in_cmd_binding->cmd_name_string, CLI_MAX_CMD_NAME_LENGTH))
+        const cli_binding_t* cmd_binding = &g_cli_cfg->cmd_bindings_buffer[i];
+        if (0 == strncmp(cmd_binding->cmd_name_string, in_cmd_binding->cmd_name_string, CLI_MAX_CMD_NAME_LENGTH))
         {
             bBindingExists = true;
             break;
@@ -270,14 +273,17 @@ void cli_unregister(const char* const in_cmd_name)
         CLI_ASSERT(in_cmd_name);
         CLI_ASSERT(g_cli_cfg);
         CLI_ASSERT(g_cli_cfg->is_initialized);
+        CLI_ASSERT(CLI_CANARY == g_cli_cfg->start_canary_word);
+        CLI_ASSERT(CLI_CANARY == g_cli_cfg->mid_canary_word);
+        CLI_ASSERT(CLI_CANARY == g_cli_cfg->end_canary_word);
     }
 
     bool bBindingFound = false;
 
     for (size_t i = 0; i < g_cli_cfg->nof_stored_cmd_bindings; i++)
     {
-        cli_binding_t* ptBinding = &g_cli_cfg->cmd_bindings_buffer[i];
-        if (0 == strncmp(ptBinding->cmd_name_string, in_cmd_name, CLI_MAX_CMD_NAME_LENGTH))
+        cli_binding_t* cmd_binding = &g_cli_cfg->cmd_bindings_buffer[i];
+        if (0 == strncmp(cmd_binding->cmd_name_string, in_cmd_name, CLI_MAX_CMD_NAME_LENGTH))
         {
             bBindingFound = true;
             // Shift all following bindings one position to the left
@@ -304,8 +310,8 @@ void cli_print(const char* fmt, ...)
         CLI_ASSERT(g_cli_cfg->put_char_fn);
         CLI_ASSERT(true == g_cli_cfg->is_initialized);
         CLI_ASSERT(CLI_CANARY == g_cli_cfg->start_canary_word);
-        CLI_ASSERT(CLI_CANARY == g_cli_cfg->end_canary_word);
         CLI_ASSERT(CLI_CANARY == g_cli_cfg->mid_canary_word);
+        CLI_ASSERT(CLI_CANARY == g_cli_cfg->end_canary_word);
     }
 
     char buffer[128]; // Temporary buffer for formatted string
@@ -503,5 +509,6 @@ static void prv_assert_fail(const char* const in_msg)
 
     while (1)
     {
+        // Program hangs itself here
     }
 }
