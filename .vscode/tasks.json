@@ -16,5 +16,47 @@
             "dependsOn": "cmake: configure",
             "problemMatcher": []
         },
+        {
+            "label": "cmake: test (with Ceedling)",
+            "type": "shell",
+            "command": "ctest --test-dir ${workspaceFolder}/build --output-on-failure",
+            "group": "test",
+            "dependsOn": "cmake: build",
+            "problemMatcher": []
+        },
+        {
+            "label": "cmake: ceedling only",
+            "type": "shell",
+            "command": "cmake --build ${workspaceFolder}/build --target ceedling_tests",
+            "group": "test",
+            "dependsOn": "cmake: configure",
+            "problemMatcher": []
+        },
+        {
+            "label": "Run Unit Tests (Ceedling)",
+            "type": "shell",
+            "command": "ceedling test:all",
+            "problemMatcher": []
+        },
+        {
+            "label": "cmake: build and test",
+            "type": "shell",
+            "command": "cmake --build ${workspaceFolder}/build --target build_and_test",
+            "group": "test",
+            "dependsOn": "cmake: configure",
+            "problemMatcher": []
+        },
+        {
+            "label": "Build with UTs",
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "cmake: test (with Ceedling)"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": []
+        }
     ]
 }
