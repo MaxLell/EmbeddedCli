@@ -40,6 +40,7 @@ static cli_bool_t prv_is_rx_buffer_full(void);
 static char prv_get_last_recv_char_from_rx_buffer(void);
 
 static const cli_binding_t* prv_find_cmd(const char* const in_cmd_name);
+static uint8_t prv_get_args_from_rx_buffer(char* array_of_arguments[], uint8_t max_arguments);
 
 static int prv_cmd_handler_help(int argc, char* argv[], void* context);
 static int prv_cmd_handler_clear_screen(int argc, char* argv[], void* context);
@@ -103,12 +104,6 @@ void cli_receive(char in_char)
     size_t start_count, end_count;
     start_count = g_cli_cfg->nof_stored_chars_in_rx_buffer;
 
-    if (CLI_TRUE == prv_is_rx_buffer_full())
-    {
-        prv_write_string("Buffer is full");
-        return;
-    }
-
     switch (in_char)
     {
         case '\r':
@@ -118,8 +113,8 @@ void cli_receive(char in_char)
         }
         case '\b':
         {
-            cli_bool_t rx_buffer_empty = (g_cli_cfg->nof_stored_chars_in_rx_buffer > 0);
-            if (CLI_FALSE == rx_buffer_empty)
+            cli_bool_t is_rx_buffer_empty = (g_cli_cfg->nof_stored_chars_in_rx_buffer > 0);
+            if (CLI_FALSE == is_rx_buffer_empty)
             {
                 g_cli_cfg->nof_stored_chars_in_rx_buffer--;
                 size_t idx = g_cli_cfg->nof_stored_chars_in_rx_buffer;
@@ -132,6 +127,11 @@ void cli_receive(char in_char)
         }
         default:
         {
+            if (CLI_TRUE == prv_is_rx_buffer_full())
+            {
+                prv_write_string("Buffer is full");
+                return;
+            }
             // Add the character to the buffer
             size_t idx = g_cli_cfg->nof_stored_chars_in_rx_buffer;
             g_cli_cfg->rx_char_buffer[idx] = in_char;
@@ -148,10 +148,6 @@ void cli_receive(char in_char)
 
 void cli_process()
 {
-    char* array_of_arguments[CLI_MAX_NOF_ARGUMENTS] = {0};
-    uint8_t nof_identified_arguments = 0;
-    char* next_argument = NULL;
-
     { // Input Checks
         ASSERT(g_cli_cfg);
         ASSERT(g_cli_cfg->put_char_fn);
@@ -160,56 +156,34 @@ void cli_process()
         ASSERT(CLI_CANARY == g_cli_cfg->mid_canary_word);
         ASSERT(CLI_CANARY == g_cli_cfg->end_canary_word);
     }
-    { // Do nothing, if these conditions are not met
-        if ((prv_get_last_recv_char_from_rx_buffer() != '\n') && ((CLI_FALSE == prv_is_rx_buffer_full())))
-        {
-            return;
-        }
-    }
 
-    // Process the Buffer
-    for (size_t i = 0; i < g_cli_cfg->nof_stored_chars_in_rx_buffer; i++)
+    char* argv[CLI_MAX_NOF_ARGUMENTS] = {0};
+    uint8_t argc = 0;
+
+    if ((prv_get_last_recv_char_from_rx_buffer() != '\n') && ((CLI_FALSE == prv_is_rx_buffer_full())))
     {
-        if (nof_identified_arguments >= CLI_MAX_NOF_ARGUMENTS)
-        {
-            prv_write_string("Too many arguments \n");
-            break;
-        }
-
-        char* const current_char = &g_cli_cfg->rx_char_buffer[i];
-        if (' ' == *current_char || '\n' == *current_char || (g_cli_cfg->nof_stored_chars_in_rx_buffer - 1) == i)
-        {
-            *current_char = '\0';
-            if (next_argument)
-            {
-                int idx = nof_identified_arguments;
-                array_of_arguments[idx] = next_argument;
-                nof_identified_arguments++;
-                next_argument = NULL;
-            }
-        }
-        else if (!next_argument)
-        {
-            next_argument = current_char;
-        }
+        // Do nothing, if these conditions are not met
+        return;
     }
 
-    if (CLI_MAX_RX_BUFFER_SIZE == g_cli_cfg->nof_stored_chars_in_rx_buffer)
-    {
-        prv_write_char('\n');
-    }
+    argc = prv_get_args_from_rx_buffer(argv, CLI_MAX_NOF_ARGUMENTS);
+
+    // if (CLI_MAX_RX_BUFFER_SIZE == g_cli_cfg->nof_stored_chars_in_rx_buffer)
+    // {
+    //     prv_write_char('\n');
+    // }
 
     // call the command handler (if available)
-    if (nof_identified_arguments >= 1)
+    if (argc >= 1)
     {
-        const cli_binding_t* ptCmdBinding = prv_find_cmd(array_of_arguments[0]);
+        const cli_binding_t* ptCmdBinding = prv_find_cmd(argv[0]);
         if (NULL == ptCmdBinding)
         {
-            prv_write_cmd_unknown(array_of_arguments[0]);
+            prv_write_cmd_unknown(argv[0]);
         }
         else
         {
-            ptCmdBinding->cmd_handler_fn(nof_identified_arguments, array_of_arguments, ptCmdBinding->context);
+            ptCmdBinding->cmd_handler_fn(argc, argv, ptCmdBinding->context);
         }
     }
 
@@ -330,6 +304,24 @@ void cli_print(const char* fmt, ...)
 
     prv_write_string(buffer);
     prv_write_char('\n');
+}
+
+void cli_deinit(cli_cfg_t* const inout_module_cfg)
+{
+    { // Input Checks
+        ASSERT(inout_module_cfg);
+        ASSERT(g_cli_cfg);
+        ASSERT(g_cli_cfg == inout_module_cfg);
+        ASSERT(g_cli_cfg->is_initialized);
+        ASSERT(CLI_CANARY == g_cli_cfg->start_canary_word);
+        ASSERT(CLI_CANARY == g_cli_cfg->mid_canary_word);
+        ASSERT(CLI_CANARY == g_cli_cfg->end_canary_word);
+    }
+    inout_module_cfg->is_initialized = CLI_FALSE;
+    g_cli_cfg = NULL;
+
+    // Clear the config structure
+    memset(inout_module_cfg, 0, sizeof(cli_cfg_t));
 }
 
 /* #############################################################################
@@ -472,6 +464,65 @@ static int prv_cmd_handler_clear_screen(int argc, char* argv[], void* context)
     // ANSI escape code to clear screen and move cursor to home
     cli_print("\033[2J\033[H");
     return CLI_OK_STATUS;
+}
+
+static uint8_t prv_get_args_from_rx_buffer(char* array_of_arguments[], uint8_t max_arguments)
+{
+    { // Input Checks
+        ASSERT(g_cli_cfg);
+        ASSERT(array_of_arguments);
+        ASSERT(max_arguments > 0);
+        ASSERT(g_cli_cfg->rx_char_buffer);
+        ASSERT(CLI_TRUE == g_cli_cfg->is_initialized);
+    }
+
+    uint8_t nof_identified_arguments = 0;
+    char* next_argument = NULL;
+
+    // Process the Buffer - tokenize arguments separated by spaces or newlines
+    for (size_t i = 0; i < g_cli_cfg->nof_stored_chars_in_rx_buffer; i++)
+    {
+        if (nof_identified_arguments >= max_arguments)
+        {
+            prv_write_string("Too many arguments \n");
+            break;
+        }
+
+        char* const current_char = &g_cli_cfg->rx_char_buffer[i];
+        const cli_bool_t is_delimiter_char = (' ' == *current_char || '\n' == *current_char);
+        const cli_bool_t is_last_char = (i == (g_cli_cfg->nof_stored_chars_in_rx_buffer - 1));
+
+        if (is_delimiter_char)
+        {
+            // Found delimiter - terminate current argument if any
+            *current_char = '\0';
+            if (next_argument != NULL)
+            {
+                array_of_arguments[nof_identified_arguments] = next_argument;
+                nof_identified_arguments++;
+                next_argument = NULL;
+            }
+        }
+        else
+        {
+            // Non-delimiter character
+            if (next_argument == NULL)
+            {
+                // Start of new argument
+                next_argument = current_char;
+            }
+
+            // Handle last character if it's not a delimiter
+            if (is_last_char && next_argument != NULL)
+            {
+                array_of_arguments[nof_identified_arguments] = next_argument;
+                nof_identified_arguments++;
+                next_argument = NULL;
+            }
+        }
+    }
+
+    return nof_identified_arguments;
 }
 
 static int prv_cmd_handler_help(int argc, char* argv[], void* context)
