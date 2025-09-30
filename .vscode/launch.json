@@ -13,7 +13,7 @@
             "externalConsole": true,
             "MIMode": "gdb",
             "miDebuggerPath": "/usr/bin/gdb",
-            "preLaunchTask": "cmake: build",
+            "preLaunchTask": "Build (Ceedling + CMake)",
             "setupCommands": [
                 {
                     "description": "Enable pretty-printing for gdb",
