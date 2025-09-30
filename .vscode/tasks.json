@@ -16,20 +16,5 @@
             "dependsOn": "cmake: configure",
             "problemMatcher": []
         },
-        {
-            "label": "Run Ceedling",
-            "type": "shell",
-            "command": "ceedling test:all",
-            "problemMatcher": []
-        },
-        {
-            "label": "Build (Ceedling + CMake)",
-            "dependsOrder": "sequence",
-            "dependsOn": [
-                "Run Ceedling",
-                "cmake: build"
-            ],
-            "problemMatcher": []
-        }
     ]
 }
