@@ -64,6 +64,8 @@ extern "C"
 
     void cli_print(const char* const fmt, ...);
 
+    void cli_deinit(cli_cfg_t* const inout_module_cfg);
+
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
