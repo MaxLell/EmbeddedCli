@@ -100,10 +100,8 @@ void cli_receive(char in_char)
         ASSERT(CLI_CANARY == g_cli_cfg->end_canary_word);
     }
 
-    if ('\r' == in_char)
-    {
-        return;
-    }
+    size_t start_count, end_count;
+    start_count = g_cli_cfg->nof_stored_chars_in_rx_buffer;
 
     if (CLI_TRUE == prv_is_rx_buffer_full())
     {
@@ -111,24 +109,41 @@ void cli_receive(char in_char)
         return;
     }
 
-    if ('\b' == in_char) // Character delete (backspace)
+    switch (in_char)
     {
-        if (g_cli_cfg->nof_stored_chars_in_rx_buffer > 0)
+        case '\r':
         {
-            g_cli_cfg->nof_stored_chars_in_rx_buffer--;
-            size_t idx = g_cli_cfg->nof_stored_chars_in_rx_buffer;
+            return;
+            break;
+        }
+        case '\b':
+        {
+            cli_bool_t rx_buffer_empty = (g_cli_cfg->nof_stored_chars_in_rx_buffer > 0);
+            if (CLI_FALSE == rx_buffer_empty)
+            {
+                g_cli_cfg->nof_stored_chars_in_rx_buffer--;
+                size_t idx = g_cli_cfg->nof_stored_chars_in_rx_buffer;
 
-            // Remove the last character (the one that was deleted)
-            g_cli_cfg->rx_char_buffer[idx] = '\0';
+                // Remove the last character (the one that was deleted)
+                // Replace it with a null character
+                g_cli_cfg->rx_char_buffer[idx] = '\0';
+            }
+            break;
+        }
+        default:
+        {
+            // Add the character to the buffer
+            size_t idx = g_cli_cfg->nof_stored_chars_in_rx_buffer;
+            g_cli_cfg->rx_char_buffer[idx] = in_char;
+            g_cli_cfg->nof_stored_chars_in_rx_buffer++;
+            break;
         }
     }
-    else // add the character to the buffer
-    {
-        size_t idx = g_cli_cfg->nof_stored_chars_in_rx_buffer;
-        g_cli_cfg->rx_char_buffer[idx] = in_char;
-        g_cli_cfg->nof_stored_chars_in_rx_buffer++;
-    }
+
+    end_count = g_cli_cfg->nof_stored_chars_in_rx_buffer;
+
     ASSERT(g_cli_cfg->nof_stored_chars_in_rx_buffer < CLI_MAX_RX_BUFFER_SIZE);
+    ASSERT(start_count != end_count);
 }
 
 void cli_process()
@@ -146,7 +161,7 @@ void cli_process()
         ASSERT(CLI_CANARY == g_cli_cfg->end_canary_word);
     }
     { // Do nothing, if these conditions are not met
-        if (prv_get_last_recv_char_from_rx_buffer() != '\n' && (CLI_FALSE == prv_is_rx_buffer_full()))
+        if ((prv_get_last_recv_char_from_rx_buffer() != '\n') && ((CLI_FALSE == prv_is_rx_buffer_full())))
         {
             return;
         }

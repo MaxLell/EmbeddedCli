@@ -46,6 +46,7 @@ int cmd_echo_string(int argc, char* argv[], void* context)
 int cmd_display_args(int argc, char* argv[], void* context)
 {
     int i;
+    cli_print("%s\n", CLI_OK_PROMPT);
     for (i = 0; i < argc; i++)
     {
         cli_print("argv[%d] --> \"%s\" \n", i, argv[i]);
