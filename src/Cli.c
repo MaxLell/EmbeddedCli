@@ -95,6 +95,18 @@ void cli_receive(char in_char)
 {
     prv_verify_object_integrity(g_cli_cfg);
 
+    if (CLI_TRUE == prv_is_rx_buffer_full())
+    {
+        // Buffer full - ignore the character
+        prv_write_string("Buffer is full\n");
+
+        // Reset the buffer to avoid overflows
+        prv_reset_rx_buffer();
+        prv_write_cli_prompt();
+
+        return;
+    }
+
     switch (in_char)
     {
         case 0x7F: // DEL
@@ -122,27 +134,16 @@ void cli_receive(char in_char)
         }
         default:
         {
-            if (CLI_FALSE == prv_is_rx_buffer_full())
-            {
-                // Add the character to the buffer
-                uint8_t idx = g_cli_cfg->nof_stored_chars_in_rx_buffer;
-                g_cli_cfg->rx_char_buffer[idx] = in_char;
-                g_cli_cfg->nof_stored_chars_in_rx_buffer++;
+            // Add the character to the buffer
+            uint8_t idx = g_cli_cfg->nof_stored_chars_in_rx_buffer;
+            g_cli_cfg->rx_char_buffer[idx] = in_char;
+            g_cli_cfg->nof_stored_chars_in_rx_buffer++;
 
-                prv_verify_object_integrity(g_cli_cfg);
+            prv_verify_object_integrity(g_cli_cfg);
 
-                // write the character back out to the console
-                prv_write_char(in_char);
-            }
-            else
-            {
-                // Buffer full - ignore the character
-                prv_write_string("Buffer is full\n");
+            // write the character back out to the console
+            prv_write_char(in_char);
 
-                // Reset the buffer to avoid overflows
-                prv_reset_rx_buffer();
-                prv_write_cli_prompt();
-            }
             break;
         }
     }
