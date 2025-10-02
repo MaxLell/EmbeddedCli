@@ -19,7 +19,7 @@ extern "C"
 #define CLI_MAX_CMD_NAME_LENGTH      (32)
 #define CLI_MAX_HELPER_STRING_LENGTH (64)
 
-#define CLI_MAX_RX_BUFFER_SIZE       (256)
+#define CLI_MAX_RX_BUFFER_SIZE       (128)
 
 #define CLI_GET_ARRAY_SIZE(arr)      (sizeof(arr) / sizeof(arr[0]))
 
@@ -41,11 +41,11 @@ extern "C"
         cli_put_char_fn put_char_fn;
         uint8_t is_initialized;
 
-        size_t nof_stored_chars_in_rx_buffer;
+        uint8_t nof_stored_chars_in_rx_buffer;
         char rx_char_buffer[CLI_MAX_RX_BUFFER_SIZE];
         uint32_t mid_canary_word;
 
-        size_t nof_stored_cmd_bindings;
+        uint8_t nof_stored_cmd_bindings;
         cli_binding_t cmd_bindings_buffer[CLI_MAX_NOF_CALLBACKS];
         uint32_t end_canary_word;
     } cli_cfg_t;

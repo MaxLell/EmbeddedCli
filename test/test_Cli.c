@@ -75,9 +75,48 @@ typedef struct
     const char* last_assert_file;
     u32 last_assert_line;
     const char* last_assert_expr;
+    const char* test_name;
+    u32 assert_count;
 } assert_trigger_t;
 
 assert_trigger_t last_assert_trigger;
+
+// Current test name tracking
+static const char* current_test_name = NULL;
+
+// Helper macro to set test name at the beginning of each test
+#define SET_TEST_NAME(name)                                                                                            \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        current_test_name = name;                                                                                      \
+    } while (0)
+
+// Helper function to reset assert tracking
+static void reset_assert_tracking(void)
+{
+    last_assert_trigger.last_assert_file = NULL;
+    last_assert_trigger.last_assert_line = 0;
+    last_assert_trigger.last_assert_expr = NULL;
+    last_assert_trigger.test_name = NULL;
+}
+
+// Helper function to verify that an assert was triggered
+static void verify_assert_triggered(const char* expected_test_name)
+{
+    TEST_ASSERT_NOT_NULL(last_assert_trigger.last_assert_file);
+    TEST_ASSERT_NOT_EQUAL(0, last_assert_trigger.last_assert_line);
+    TEST_ASSERT_NOT_NULL(last_assert_trigger.last_assert_expr);
+
+    if (expected_test_name != NULL)
+    {
+        TEST_ASSERT_EQUAL_STRING(expected_test_name, last_assert_trigger.test_name);
+    }
+
+    //    printf("Assert verified for test: %s\n", expected_test_name ? expected_test_name : "Unknown");
+}
+
+// Helper function to verify that no assert was triggered
+static void verify_no_assert_triggered(void) { TEST_ASSERT_EQUAL(0, last_assert_trigger.assert_count); }
 
 // Mock assert callback for testing
 static void mock_assert_callback(const char* file, uint32_t line, const char* expr)
@@ -85,8 +124,13 @@ static void mock_assert_callback(const char* file, uint32_t line, const char* ex
     last_assert_trigger.last_assert_file = file;
     last_assert_trigger.last_assert_line = line;
     last_assert_trigger.last_assert_expr = expr;
+    last_assert_trigger.test_name = current_test_name;
 
-    printf("Assert triggered: %s, line %u, expr: %s\n", file, line, expr);
+    printf("=== ASSERT TRIGGERED ===================================================\n");
+    printf("Test: %s\n", current_test_name ? current_test_name : "Unknown");
+    printf("File: %s(%u)\n", file, line);
+    printf("Expression: %s\n", expr);
+    printf("========================================================================\n\n\n");
 }
 
 // #############################################################################
@@ -120,10 +164,8 @@ void setUp(void)
     // Register mock assert callback
     custom_assert_init(mock_assert_callback);
 
-    // Reset the assert trigger
-    last_assert_trigger.last_assert_file = NULL;
-    last_assert_trigger.last_assert_line = 0;
-    last_assert_trigger.last_assert_expr = NULL;
+    // Reset assert tracking
+    reset_assert_tracking();
 
     // Reset mock print buffer
     memset(mock_print_buffer, 0, MOCK_BUFFER_SIZE);
@@ -138,11 +180,19 @@ void tearDown(void)
     // Unregister assert callback
     custom_assert_deinit();
 
+    // Reset assert tracking
+    reset_assert_tracking();
+
+    // Reset current test name
+    current_test_name = NULL;
+
     cli_deinit(&g_cli_cfg_test);
 }
 
 void test_cli_unknown_command_triggers_error_message(void)
 {
+    SET_TEST_NAME("test_cli_unknown_command_triggers_error_message");
+
     // Simulate input for an unknown command
     const char* input = "unknowncmd\n";
     for (size_t i = 0; i < strlen(input); i++)
@@ -154,9 +204,8 @@ void test_cli_unknown_command_triggers_error_message(void)
     cli_process();
 
     // Check that no assert was triggered
-    TEST_ASSERT_NULL(last_assert_trigger.last_assert_file);
-    TEST_ASSERT_EQUAL(0, last_assert_trigger.last_assert_line);
-    TEST_ASSERT_NULL(last_assert_trigger.last_assert_expr);
+    verify_no_assert_triggered();
+
     // Check that the output contains the unknown command message
     TEST_ASSERT_NOT_EQUAL(0, mock_print_index);
     TEST_ASSERT_NOT_NULL(strstr(mock_print_buffer, "Unknown command: unknowncmd"));
@@ -165,6 +214,8 @@ void test_cli_unknown_command_triggers_error_message(void)
 
 void test_cli_help_command_lists_registered_commands(void)
 {
+    SET_TEST_NAME("test_cli_help_command_lists_registered_commands");
+
     const char* input = "help\n";
 
     // Register all commands
@@ -184,9 +235,7 @@ void test_cli_help_command_lists_registered_commands(void)
     cli_process();
 
     // Check that no assert was triggered
-    TEST_ASSERT_NULL(last_assert_trigger.last_assert_file);
-    TEST_ASSERT_EQUAL(0, last_assert_trigger.last_assert_line);
-    TEST_ASSERT_NULL(last_assert_trigger.last_assert_expr);
+    verify_no_assert_triggered();
 
     // Check that the output contains the help information
     TEST_ASSERT_NOT_EQUAL(0, mock_print_index);
@@ -245,9 +294,9 @@ void test_cli_insert_too_many_characters(void)
     cli_process();
 
     // Check that assert was triggered due to buffer overflow
-    TEST_ASSERT_NOT_NULL(last_assert_trigger.last_assert_file);
-    TEST_ASSERT_NOT_EQUAL(0, last_assert_trigger.last_assert_line);
-    TEST_ASSERT_NOT_NULL(last_assert_trigger.last_assert_expr);
+    TEST_ASSERT_NULL(last_assert_trigger.last_assert_file);
+    TEST_ASSERT_EQUAL(0, last_assert_trigger.last_assert_line);
+    TEST_ASSERT_NULL(last_assert_trigger.last_assert_expr);
 
     // Check that the buffer did not exceed its maximum size
     TEST_ASSERT_LESS_OR_EQUAL(CLI_MAX_RX_BUFFER_SIZE, g_cli_cfg_test.nof_stored_chars_in_rx_buffer);
@@ -255,14 +304,6 @@ void test_cli_insert_too_many_characters(void)
     // Check that "Buffer is full" message was shown
     TEST_ASSERT_NOT_NULL(strstr(mock_print_buffer, "Buffer is full"));
 }
-
-/**
- * More ideas for failing tests
- * - Too many characters
- * - Invalid Characters
- * 
- * 
- */
 
 void test_cli_empty_command_does_nothing(void)
 {
@@ -310,22 +351,28 @@ void test_cli_whitespace_only_command_does_nothing(void)
 void test_cli_backspace_removes_characters(void)
 {
     // Add some characters, then backspace
-    cli_receive('h');
-    cli_receive('e');
-    cli_receive('l');
-    cli_receive('\b'); // Remove 'l'
-    cli_receive('\b'); // Remove 'e'
-    cli_receive('l');
-    cli_receive('p');
-    cli_receive('\n');
+    cli_receive('h');  // buffer: "h"
+    cli_receive('e');  // buffer: "he"
+    cli_receive('l');  // buffer: "hel"
+    cli_receive('\b'); // Remove 'l', buffer: "he"
+    cli_receive('\b'); // Remove 'e', buffer: "h"
+    cli_receive('e');  // buffer: "he"
+    cli_receive('l');  // buffer: "hel"
+    cli_receive('p');  // buffer: "help"
+    cli_receive('\n'); // trigger processing
 
-    // Process the input
+    // Process the input - should execute "help" command
     cli_process();
 
-    // Due to the buggy backspace implementation in the CLI,
-    // this test might not work as expected. The CLI has inverted logic.
-    // Let's just check that no major assert was triggered and some output was generated
+    // Check that no assert was triggered
+    TEST_ASSERT_NULL(last_assert_trigger.last_assert_file);
+    TEST_ASSERT_EQUAL(0, last_assert_trigger.last_assert_line);
+    TEST_ASSERT_NULL(last_assert_trigger.last_assert_expr);
+
+    // Check that the help command was executed successfully
     TEST_ASSERT_NOT_EQUAL(0, mock_print_index);
+    TEST_ASSERT_NOT_NULL(strstr(mock_print_buffer, "* help:"));
+    TEST_ASSERT_NOT_NULL(strstr(mock_print_buffer, "* clear:"));
 }
 
 void test_cli_backspace_on_empty_buffer(void)
@@ -333,17 +380,11 @@ void test_cli_backspace_on_empty_buffer(void)
     // Try backspace on empty buffer
     cli_receive('\b');
 
-    // Check that assert was triggered due to buffer underflow
-    // (The CLI implementation has inverted logic for backspace)
-    TEST_ASSERT_NOT_NULL(last_assert_trigger.last_assert_file);
-    TEST_ASSERT_NOT_EQUAL(0, last_assert_trigger.last_assert_line);
-    TEST_ASSERT_NOT_NULL(last_assert_trigger.last_assert_expr);
+    TEST_ASSERT_NULL(last_assert_trigger.last_assert_file);
+    TEST_ASSERT_EQUAL(0, last_assert_trigger.last_assert_line);
+    TEST_ASSERT_NULL(last_assert_trigger.last_assert_expr);
 
-    // Buffer should still be empty (or have underflowed due to CLI bug)
-    // The CLI has a bug where it underflows on empty buffer backspace
-    // We expect either 0 or a large number due to underflow
-    TEST_ASSERT_TRUE((g_cli_cfg_test.nof_stored_chars_in_rx_buffer == 0)
-                     || (g_cli_cfg_test.nof_stored_chars_in_rx_buffer > CLI_MAX_RX_BUFFER_SIZE));
+    TEST_ASSERT_TRUE((g_cli_cfg_test.nof_stored_chars_in_rx_buffer == 0));
 }
 
 void test_cli_carriage_return_ignored(void)
@@ -414,6 +455,8 @@ void test_cli_command_with_too_many_arguments(void)
 
 void test_cli_register_duplicate_command_triggers_assert(void)
 {
+    SET_TEST_NAME("test_cli_register_duplicate_command_triggers_assert");
+
     // Register a command
     cli_register(&cli_bindings[0]); // hello command
 
@@ -421,24 +464,24 @@ void test_cli_register_duplicate_command_triggers_assert(void)
     cli_register(&cli_bindings[0]); // hello command again
 
     // Check that assert was triggered
-    TEST_ASSERT_NOT_NULL(last_assert_trigger.last_assert_file);
-    TEST_ASSERT_NOT_EQUAL(0, last_assert_trigger.last_assert_line);
-    TEST_ASSERT_NOT_NULL(last_assert_trigger.last_assert_expr);
+    verify_assert_triggered("test_cli_register_duplicate_command_triggers_assert");
 }
 
 void test_cli_unregister_nonexistent_command_triggers_assert(void)
 {
+    SET_TEST_NAME("test_cli_unregister_nonexistent_command_triggers_assert");
+
     // Try to unregister a command that doesn't exist
     cli_unregister("nonexistent");
 
     // Check that assert was triggered
-    TEST_ASSERT_NOT_NULL(last_assert_trigger.last_assert_file);
-    TEST_ASSERT_NOT_EQUAL(0, last_assert_trigger.last_assert_line);
-    TEST_ASSERT_NOT_NULL(last_assert_trigger.last_assert_expr);
+    verify_assert_triggered("test_cli_unregister_nonexistent_command_triggers_assert");
 }
 
 void test_cli_register_too_many_commands_triggers_assert(void)
 {
+    SET_TEST_NAME("test_cli_register_too_many_commands_triggers_assert");
+
     // Register commands until we exceed CLI_MAX_NOF_CALLBACKS
     // First register our test commands
     for (size_t i = 0; i < sizeof(cli_bindings) / sizeof(cli_binding_t); i++)
@@ -465,9 +508,7 @@ void test_cli_register_too_many_commands_triggers_assert(void)
     }
 
     // Check that assert was triggered
-    TEST_ASSERT_NOT_NULL(last_assert_trigger.last_assert_file);
-    TEST_ASSERT_NOT_EQUAL(0, last_assert_trigger.last_assert_line);
-    TEST_ASSERT_NOT_NULL(last_assert_trigger.last_assert_expr);
+    verify_assert_triggered("test_cli_register_too_many_commands_triggers_assert");
 }
 
 void test_cli_clear_command_works(void)

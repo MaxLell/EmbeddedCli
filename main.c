@@ -81,7 +81,7 @@ char console_get_char(void) { return (char)getchar(); }
 
 void assert_failed(const char* file, uint32_t line, const char* expr)
 {
-    printf("ASSERT failed: %s, file: %s, line: %u\n", expr, file, line);
+    printf("%s(%u): ASSERT failed: %s\n", file, line, expr);
     while (1)
         ;
 }
