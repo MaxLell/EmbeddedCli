@@ -129,6 +129,7 @@ void cli_receive(char in_char)
 
                 prv_verify_object_integrity(g_cli_cfg);
 
+                // write the character back out to the console
                 prv_write_char(in_char);
             }
             else
