@@ -14,7 +14,8 @@
 typedef uint8_t cli_bool_t;
 
 #define CLI_MAX_NOF_ARGUMENTS (16)
-#define CLI_PROMPT            "================================================================ \n> "
+#define CLI_PROMPT            "================================================================\n> "
+#define CLI_SPACER            "----------------------------------------------------------------\n"
 #define CLI_CANARY            (0xA5A5A5A5U)
 #define CLI_TRUE              (1)
 #define CLI_FALSE             (0)
@@ -169,7 +170,7 @@ void cli_process()
     if (argc >= 1)
     {
         const cli_binding_t* ptCmdBinding = prv_find_cmd(argv[0]);
-        prv_write_string("----------------------------------------------------------------\n");
+        prv_write_string(CLI_SPACER);
         if (NULL == ptCmdBinding)
         {
             cmd_status = CLI_FAIL_STATUS;
@@ -179,7 +180,7 @@ void cli_process()
         {
             cmd_status = ptCmdBinding->cmd_handler_fn(argc, argv, ptCmdBinding->context);
         }
-        prv_write_string("----------------------------------------------------------------\n");
+        prv_write_string(CLI_SPACER);
         prv_write_string("Status -> ");
         prv_write_string((cmd_status == CLI_OK_STATUS) ? CLI_OK_PROMPT : CLI_FAIL_PROMPT);
         prv_write_char('\n');
