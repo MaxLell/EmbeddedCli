@@ -96,12 +96,8 @@ void cli_receive(char in_char)
 
     switch (in_char)
     {
-        case '\r':
-        {
-            return;
-            break;
-        }
-        case '\b':
+        case 0x7F: // DEL
+        case '\b': // Backspace
         {
             cli_bool_t rx_buffer_has_chars = (g_cli_cfg->nof_stored_chars_in_rx_buffer > 0);
             if (CLI_TRUE == rx_buffer_has_chars)
@@ -113,7 +109,14 @@ void cli_receive(char in_char)
                 // Replace it with a null character
                 g_cli_cfg->rx_char_buffer[idx] = '\0';
             }
+            prv_write_char('\b');
             break;
+        }
+        case '\r':
+        {
+            // Convert CR to LF to handle Enter key from terminal programs
+            in_char = '\n';
+            // Fall through to default case to process as normal character
         }
         default:
         {
@@ -125,6 +128,8 @@ void cli_receive(char in_char)
                 g_cli_cfg->nof_stored_chars_in_rx_buffer++;
 
                 prv_verify_object_integrity(g_cli_cfg);
+
+                prv_write_char(in_char);
             }
             else
             {
