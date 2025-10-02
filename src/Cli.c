@@ -117,6 +117,7 @@ void cli_receive(char in_char)
             // Convert CR to LF to handle Enter key from terminal programs
             in_char = '\n';
             // Fall through to default case to process as normal character
+            __attribute__((fallthrough));
         }
         default:
         {

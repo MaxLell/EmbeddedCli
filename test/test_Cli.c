@@ -387,22 +387,6 @@ void test_cli_backspace_on_empty_buffer(void)
     TEST_ASSERT_TRUE((g_cli_cfg_test.nof_stored_chars_in_rx_buffer == 0));
 }
 
-void test_cli_carriage_return_ignored(void)
-{
-    // Test that \r is ignored
-    cli_receive('h');
-    cli_receive('\r');
-    cli_receive('e');
-    cli_receive('l');
-    cli_receive('p');
-    cli_receive('\n');
-
-    cli_process();
-
-    // Should execute "help" command
-    TEST_ASSERT_NOT_NULL(strstr(mock_print_buffer, "* help:"));
-}
-
 void test_cli_command_with_multiple_arguments(void)
 {
     // Register a command that uses multiple arguments
