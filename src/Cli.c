@@ -14,7 +14,7 @@
 typedef uint8_t cli_bool_t;
 
 #define CLI_MAX_NOF_ARGUMENTS (16)
-#define CLI_PROMPT            "-------- \n> "
+#define CLI_PROMPT            "================================================================ \n> "
 #define CLI_CANARY            (0xA5A5A5A5U)
 #define CLI_TRUE              (1)
 #define CLI_FALSE             (0)
@@ -153,6 +153,7 @@ void cli_process()
 
     char* argv[CLI_MAX_NOF_ARGUMENTS] = {0};
     uint8_t argc = 0;
+    int cmd_status = 0;
 
     if ((prv_get_last_recv_char_from_rx_buffer() != '\n') && ((CLI_FALSE == prv_is_rx_buffer_full())))
     {
@@ -166,14 +167,20 @@ void cli_process()
     if (argc >= 1)
     {
         const cli_binding_t* ptCmdBinding = prv_find_cmd(argv[0]);
+        prv_write_string("----------------------------------------------------------------\n");
         if (NULL == ptCmdBinding)
         {
+            cmd_status = CLI_FAIL_STATUS;
             prv_write_cmd_unknown(argv[0]);
         }
         else
         {
-            ptCmdBinding->cmd_handler_fn(argc, argv, ptCmdBinding->context);
+            cmd_status = ptCmdBinding->cmd_handler_fn(argc, argv, ptCmdBinding->context);
         }
+        prv_write_string("----------------------------------------------------------------\n");
+        prv_write_string("Status -> ");
+        prv_write_string((cmd_status == CLI_OK_STATUS) ? CLI_OK_PROMPT : CLI_FAIL_PROMPT);
+        prv_write_char('\n');
     }
 
     // Reset the cli buffer and write the prompt again for a new user input
@@ -371,7 +378,7 @@ static void prv_write_cmd_unknown(const char* const in_cmd_name)
     { // Input Checks
         prv_verify_object_integrity(g_cli_cfg);
     }
-    prv_write_string(CLI_FAIL_PROMPT "Unknown command: ");
+    prv_write_string("Unknown command: ");
     prv_write_string(in_cmd_name);
     prv_write_char('\n');
     prv_write_string("Type 'help' to list all commands\n");
@@ -494,7 +501,6 @@ static int prv_cmd_handler_help(int argc, char* argv[], void* context)
     { // Input Checks
         prv_verify_object_integrity(g_cli_cfg);
     }
-    prv_write_string("\n");
 
     // Create a list of all registered commands
     for (uint8_t i = 0; i < g_cli_cfg->nof_stored_cmd_bindings; ++i)
