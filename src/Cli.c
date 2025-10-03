@@ -14,8 +14,10 @@
 typedef uint8_t cli_bool_t;
 
 #define CLI_MAX_NOF_ARGUMENTS (16)
-#define CLI_PROMPT            "================================================================\n> "
-#define CLI_SPACER            "----------------------------------------------------------------\n"
+#define CLI_PROMPT            "> "
+#define CLI_PROMPT_SPACER     '='
+#define CLI_SECTION_SPACER    '-'
+#define CLI_OUTPUT_WIDTH      50
 #define CLI_CANARY            (0xA5A5A5A5U)
 #define CLI_TRUE              (1)
 #define CLI_FALSE             (0)
@@ -35,6 +37,7 @@ static void prv_write_char(char in_char);
 static void prv_put_char(char in_char);
 static void prv_write_cli_prompt(void);
 static void prv_write_cmd_unknown(const char* const in_cmd_name);
+static void prv_plot_lines(char in_char, int length);
 
 static void prv_reset_rx_buffer(void);
 static cli_bool_t prv_is_rx_buffer_full(void);
@@ -86,7 +89,7 @@ void cli_init(cli_cfg_t* const inout_module_cfg, cli_put_char_fn in_put_char_fn)
     prv_reset_rx_buffer();
     prv_write_string("CLI was started - enter your commands (or enter "
                      "'help')\n");
-    prv_write_string(CLI_PROMPT);
+    prv_write_cli_prompt();
 
     return;
 }
@@ -157,7 +160,7 @@ void cli_process()
 
     char* argv[CLI_MAX_NOF_ARGUMENTS] = {0};
     uint8_t argc = 0;
-    int cmd_status = 0;
+    int cmd_status = CLI_FAIL_STATUS;
 
     if ((prv_get_last_recv_char_from_rx_buffer() != '\n') && ((CLI_FALSE == prv_is_rx_buffer_full())))
     {
@@ -171,7 +174,7 @@ void cli_process()
     if (argc >= 1)
     {
         const cli_binding_t* ptCmdBinding = prv_find_cmd(argv[0]);
-        prv_write_string(CLI_SPACER);
+        prv_plot_lines(CLI_SECTION_SPACER, CLI_OUTPUT_WIDTH);
         if (NULL == ptCmdBinding)
         {
             cmd_status = CLI_FAIL_STATUS;
@@ -181,7 +184,7 @@ void cli_process()
         {
             cmd_status = ptCmdBinding->cmd_handler_fn(argc, argv, ptCmdBinding->context);
         }
-        prv_write_string(CLI_SPACER);
+        prv_plot_lines(CLI_SECTION_SPACER, CLI_OUTPUT_WIDTH);
         prv_write_string("Status -> ");
         prv_write_string((cmd_status == CLI_OK_STATUS) ? CLI_OK_PROMPT : CLI_FAIL_PROMPT);
         prv_write_char('\n');
@@ -374,6 +377,7 @@ static void prv_write_cli_prompt()
     { // Input Checks
         prv_verify_object_integrity(g_cli_cfg);
     }
+    prv_plot_lines(CLI_PROMPT_SPACER, CLI_OUTPUT_WIDTH);
     prv_write_string(CLI_PROMPT);
 }
 
@@ -533,4 +537,15 @@ static void prv_verify_object_integrity(const cli_cfg_t* const in_ptCfg)
     ASSERT(CLI_CANARY == in_ptCfg->start_canary_word);
     ASSERT(CLI_CANARY == in_ptCfg->mid_canary_word);
     ASSERT(CLI_CANARY == in_ptCfg->end_canary_word);
+}
+
+static void prv_plot_lines(char in_char, int length)
+{
+    ASSERT(length < 100);
+
+    for (int counter = 0; counter < length; ++counter)
+    {
+        prv_write_char(in_char);
+    }
+    prv_write_char('\n');
 }

@@ -26,7 +26,7 @@ int cmd_hello_world(int argc, char* argv[], void* context)
     (void)argc;
     (void)argv;
     (void)context;
-    cli_print("%sHello World!\n", CLI_OK_PROMPT);
+    cli_print("Hello World!\n");
     return CLI_OK_STATUS;
 }
 
@@ -34,19 +34,18 @@ int cmd_echo_string(int argc, char* argv[], void* context)
 {
     if (argc != 2)
     {
-        cli_print("%sGive one argument\n", CLI_FAIL_PROMPT);
+        cli_print("Give one argument\n");
         return CLI_FAIL_STATUS;
     }
     (void)argv;
     (void)context;
-    cli_print("%s\"%s\"\n", CLI_OK_PROMPT, argv[1]);
+    cli_print("-> %s\n", argv[1]);
     return CLI_OK_STATUS;
 }
 
 int cmd_display_args(int argc, char* argv[], void* context)
 {
     int i;
-    cli_print("%s\n", CLI_OK_PROMPT);
     for (i = 0; i < argc; i++)
     {
         cli_print("argv[%d] --> \"%s\" \n", i, argv[i]);
