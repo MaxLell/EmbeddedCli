@@ -170,11 +170,13 @@ void cli_process()
 
     argc = prv_get_args_from_rx_buffer(argv, CLI_MAX_NOF_ARGUMENTS);
 
-    // call the command handler (if available)
     if (argc >= 1)
     {
-        const cli_binding_t* ptCmdBinding = prv_find_cmd(argv[0]);
+        // plot a line on the console
         prv_plot_lines(CLI_SECTION_SPACER, CLI_OUTPUT_WIDTH);
+
+        // call the command handler (if available)
+        const cli_binding_t* ptCmdBinding = prv_find_cmd(argv[0]);
         if (NULL == ptCmdBinding)
         {
             cmd_status = CLI_FAIL_STATUS;
@@ -184,6 +186,7 @@ void cli_process()
         {
             cmd_status = ptCmdBinding->cmd_handler_fn(argc, argv, ptCmdBinding->context);
         }
+
         prv_plot_lines(CLI_SECTION_SPACER, CLI_OUTPUT_WIDTH);
         prv_write_string("Status -> ");
         prv_write_string((cmd_status == CLI_OK_STATUS) ? CLI_OK_PROMPT : CLI_FAIL_PROMPT);
