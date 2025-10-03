@@ -21,6 +21,8 @@ typedef uint8_t cli_bool_t;
 #define CLI_CANARY            (0xA5A5A5A5U)
 #define CLI_TRUE              (1)
 #define CLI_FALSE             (0)
+#define CLI_OK_PROMPT         "\033[32m[OK]  \033[0m "
+#define CLI_FAIL_PROMPT       "\033[31m[FAIL]\033[0m "
 
 /* #############################################################################
  * # static variables
@@ -124,8 +126,10 @@ void cli_receive(char in_char)
                 // Remove the last character (the one that was deleted)
                 // Replace it with a null character
                 g_cli_cfg->rx_char_buffer[idx] = '\0';
+
+                // Remove character from cli
+                prv_write_char('\b');
             }
-            prv_write_char('\b');
             break;
         }
         case '\r':
@@ -184,7 +188,7 @@ void cli_process()
         }
         else
         {
-            cmd_status = ptCmdBinding->cmd_handler_fn(argc, argv, ptCmdBinding->context);
+            cmd_status = ptCmdBinding->cmd_fn(argc, argv, ptCmdBinding->context);
         }
 
         prv_plot_lines(CLI_SECTION_SPACER, CLI_OUTPUT_WIDTH);
@@ -209,16 +213,15 @@ void cli_register(const cli_binding_t* const in_cmd_binding)
     {
         // Input Checks - inout_ptCfg
         ASSERT(in_cmd_binding);
-        ASSERT(in_cmd_binding->cmd_name_string);
-        ASSERT(in_cmd_binding->cmd_helper_string);
-        ASSERT(in_cmd_binding->cmd_handler_fn);
+        ASSERT(in_cmd_binding->name);
+        ASSERT(in_cmd_binding->help);
+        ASSERT(in_cmd_binding->cmd_fn);
 
         prv_verify_object_integrity(g_cli_cfg);
     }
 
-    if ((NULL == in_cmd_binding) || (0 == strlen(in_cmd_binding->cmd_name_string))
-        || (strlen(in_cmd_binding->cmd_name_string) >= CLI_MAX_CMD_NAME_LENGTH)
-        || NULL == in_cmd_binding->cmd_handler_fn)
+    if ((NULL == in_cmd_binding) || (0 == strlen(in_cmd_binding->name))
+        || (strlen(in_cmd_binding->name) >= CLI_MAX_CMD_NAME_LENGTH) || NULL == in_cmd_binding->cmd_fn)
     {
         return;
     }
@@ -229,7 +232,7 @@ void cli_register(const cli_binding_t* const in_cmd_binding)
     for (uint8_t i = 0; i < g_cli_cfg->nof_stored_cmd_bindings; i++)
     {
         const cli_binding_t* cmd_binding = &g_cli_cfg->cmd_bindings_buffer[i];
-        if (0 == strncmp(cmd_binding->cmd_name_string, in_cmd_binding->cmd_name_string, CLI_MAX_CMD_NAME_LENGTH))
+        if (0 == strncmp(cmd_binding->name, in_cmd_binding->name, CLI_MAX_CMD_NAME_LENGTH))
         {
             does_binding_exist = CLI_TRUE;
             break;
@@ -280,7 +283,7 @@ void cli_unregister(const char* const in_cmd_name)
     for (uint8_t i = 0; i < g_cli_cfg->nof_stored_cmd_bindings; i++)
     {
         cli_binding_t* cmd_binding = &g_cli_cfg->cmd_bindings_buffer[i];
-        if (0 == strncmp(cmd_binding->cmd_name_string, in_cmd_name, CLI_MAX_CMD_NAME_LENGTH))
+        if (0 == strncmp(cmd_binding->name, in_cmd_name, CLI_MAX_CMD_NAME_LENGTH))
         {
             is_binding_found = CLI_TRUE;
             // Shift all following bindings one position to the left
@@ -431,7 +434,7 @@ static const cli_binding_t* prv_find_cmd(const char* const in_cmd_name)
     for (uint8_t idx = 0; idx < g_cli_cfg->nof_stored_cmd_bindings; ++idx)
     {
         const cli_binding_t* cmd_binding = &g_cli_cfg->cmd_bindings_buffer[idx];
-        if (0 == strncmp(cmd_binding->cmd_name_string, in_cmd_name, CLI_MAX_CMD_NAME_LENGTH))
+        if (0 == strncmp(cmd_binding->name, in_cmd_name, CLI_MAX_CMD_NAME_LENGTH))
         {
             return cmd_binding;
         }
@@ -464,11 +467,7 @@ static uint8_t prv_get_args_from_rx_buffer(char* array_of_arguments[], uint8_t m
     // Process the Buffer - tokenize arguments separated by spaces or newlines
     for (uint8_t i = 0; i < g_cli_cfg->nof_stored_chars_in_rx_buffer; i++)
     {
-        if (nof_identified_arguments >= max_arguments)
-        {
-            prv_write_string("Too many arguments \n");
-            break;
-        }
+        ASSERT(nof_identified_arguments <= max_arguments);
 
         char* const current_char = &g_cli_cfg->rx_char_buffer[i];
         const cli_bool_t is_delimiter_char = (' ' == *current_char || '\n' == *current_char);
@@ -518,9 +517,9 @@ static int prv_cmd_handler_help(int argc, char* argv[], void* context)
     {
         const cli_binding_t* ptCmdBinding = &g_cli_cfg->cmd_bindings_buffer[i];
         prv_write_string("* ");
-        prv_write_string(ptCmdBinding->cmd_name_string);
+        prv_write_string(ptCmdBinding->name);
         prv_write_string(": \n              ");
-        prv_write_string(ptCmdBinding->cmd_helper_string);
+        prv_write_string(ptCmdBinding->help);
         prv_write_char('\n');
     }
 

@@ -20,7 +20,7 @@ int cmd_hello_world(int argc, char* argv[], void* context)
     (void)argc;
     (void)argv;
     (void)context;
-    cli_print("%sHello World!\n", CLI_OK_PROMPT);
+    cli_print("Hello World!\n");
     return CLI_OK_STATUS;
 }
 
@@ -28,19 +28,18 @@ int cmd_echo_string(int argc, char* argv[], void* context)
 {
     if (argc != 2)
     {
-        cli_print("%sGive one argument\n", CLI_FAIL_PROMPT);
+        cli_print("Give one argument\n");
         return CLI_FAIL_STATUS;
     }
     (void)argv;
     (void)context;
-    cli_print("%s\"%s\"\n", CLI_OK_PROMPT, argv[1]);
+    cli_print("%s\"\"\n", argv[1]);
     return CLI_OK_STATUS;
 }
 
 int cmd_display_args(int argc, char* argv[], void* context)
 {
     int i;
-    cli_print("%s\n", CLI_OK_PROMPT);
     for (i = 0; i < argc; i++)
     {
         cli_print("argv[%d] --> \"%s\" \n", i, argv[i]);
@@ -55,7 +54,6 @@ int cmd_dummy(int argc, char* argv[], void* context)
     (void)argc;
     (void)argv;
     (void)context;
-    cli_print("%s\n", CLI_OK_PROMPT);
     return CLI_OK_STATUS;
 }
 
@@ -249,7 +247,7 @@ void test_cli_help_command_lists_registered_commands(void)
     // Unregister all commands
     for (size_t i = 0; i < sizeof(cli_bindings) / sizeof(cli_binding_t); i++)
     {
-        cli_unregister(cli_bindings[i].cmd_name_string);
+        cli_unregister(cli_bindings[i].name);
 
         // Check that no assert was triggered during unregister
         TEST_ASSERT_NULL(last_assert_trigger.last_assert_file);
@@ -477,10 +475,10 @@ void test_cli_register_too_many_commands_triggers_assert(void)
     static cli_binding_t dummy_commands[20];
     for (int i = 0; i < 20; i++)
     {
-        snprintf((char*)dummy_commands[i].cmd_name_string, CLI_MAX_CMD_NAME_LENGTH, "dummy%d", i);
-        dummy_commands[i].cmd_handler_fn = cmd_dummy;
+        snprintf((char*)dummy_commands[i].name, CLI_MAX_CMD_NAME_LENGTH, "dummy%d", i);
+        dummy_commands[i].cmd_fn = cmd_dummy;
         dummy_commands[i].context = NULL;
-        snprintf((char*)dummy_commands[i].cmd_helper_string, CLI_MAX_HELPER_STRING_LENGTH, "dummy command");
+        snprintf((char*)dummy_commands[i].help, CLI_MAX_HELPER_STRING_LENGTH, "dummy command");
 
         cli_register(&dummy_commands[i]);
 

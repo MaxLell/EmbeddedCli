@@ -9,9 +9,6 @@ extern "C"
 #include <stddef.h>
 #include <stdint.h>
 
-#define CLI_OK_PROMPT                "\033[32m[OK]  \033[0m "
-#define CLI_FAIL_PROMPT              "\033[31m[FAIL]\033[0m "
-
 #define CLI_OK_STATUS                (0)
 #define CLI_FAIL_STATUS              (-1)
 
@@ -29,10 +26,10 @@ extern "C"
 
     typedef struct
     {
-        const char cmd_name_string[CLI_MAX_CMD_NAME_LENGTH];
-        cli_cmd_fn cmd_handler_fn;
+        const char name[CLI_MAX_CMD_NAME_LENGTH];
+        cli_cmd_fn cmd_fn;
         void* context;
-        const char cmd_helper_string[CLI_MAX_HELPER_STRING_LENGTH];
+        const char help[CLI_MAX_HELPER_STRING_LENGTH];
     } cli_binding_t;
 
     typedef struct
