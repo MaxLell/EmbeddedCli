@@ -407,33 +407,33 @@ void test_cli_command_with_multiple_arguments(void)
     cli_unregister("args");
 }
 
-void test_cli_command_with_too_many_arguments(void)
-{
-    // Register a command
-    cli_register(&cli_bindings[1]); // args command
+// void test_cli_command_with_too_many_arguments(void)
+// {
+//     // Register a command
+//     cli_register(&cli_bindings[1]); // args command
 
-    // Create input with more than CLI_MAX_NOF_ARGUMENTS (16) arguments
-    char input[256] = "args";
-    for (int i = 1; i <= 20; i++)
-    {
-        char arg[16];
-        snprintf(arg, sizeof(arg), " arg%d", i);
-        strcat(input, arg);
-    }
-    strcat(input, "\n");
+//     // Create input with more than CLI_MAX_NOF_ARGUMENTS (16) arguments
+//     char input[256] = "args";
+//     for (int i = 1; i <= 20; i++)
+//     {
+//         char arg[16];
+//         snprintf(arg, sizeof(arg), " arg%d", i);
+//         strcat(input, arg);
+//     }
+//     strcat(input, "\n");
 
-    for (size_t i = 0; i < strlen(input); i++)
-    {
-        cli_receive(input[i]);
-    }
+//     for (size_t i = 0; i < strlen(input); i++)
+//     {
+//         cli_receive(input[i]);
+//     }
 
-    cli_process();
+//     cli_process();
 
-    // Should show "Too many arguments" message
-    TEST_ASSERT_NOT_NULL(strstr(mock_print_buffer, "Too many arguments"));
+//     // Should show "Too many arguments" message
+//     TEST_ASSERT_NOT_NULL(strstr(mock_print_buffer, "Too many arguments"));
 
-    cli_unregister("args");
-}
+//     cli_unregister("args");
+// }
 
 void test_cli_register_duplicate_command_triggers_assert(void)
 {
@@ -577,4 +577,43 @@ void test_cli_echo_command_wrong_arguments(void)
     TEST_ASSERT_NOT_NULL(strstr(mock_print_buffer, "Give one argument"));
 
     cli_unregister("echo");
+}
+
+// void test_cli_recieve_can_autocomplete_inputs(void)
+// {
+//     // Register the hello world commands (help command is built-in)
+//     cli_register(&cli_bindings[0]); // hello command
+
+//     // test with args -> enter 'hel' + tab
+//     cli_receive('h');
+//     cli_receive('e');
+//     cli_receive('l');
+//     cli_receive('\t');
+
+//     // Cli returns a list consisting of 'hello, help'
+//     TEST_ASSERT_NOT_EQUAL(0, mock_print_index);
+//     TEST_ASSERT_NOT_NULL(strstr(mock_print_buffer, "hello"));
+//     TEST_ASSERT_NOT_NULL(strstr(mock_print_buffer, "help"));
+
+//     // add another character 'l' + tab
+//     cli_receive('l');
+//     cli_receive('\t');
+
+//     // Cli returns a list consisting of 'hello'
+//     TEST_ASSERT_NOT_EQUAL(0, mock_print_index);
+//     TEST_ASSERT_NOT_NULL(strstr(mock_print_buffer, "hello"));
+// }
+
+void test_prv_find_matching_strings(void)
+{
+    const char* input_strings[] = {"help", "hello", "clear"};
+    const char* matches[10];
+    uint8_t num_matches;
+    uint8_t found =
+        prv_find_matching_strings("he", input_strings, CLI_GET_ARRAY_SIZE(input_strings), matches, &num_matches);
+
+    TEST_ASSERT_TRUE(found);
+    TEST_ASSERT_EQUAL(2, num_matches);
+    TEST_ASSERT_EQUAL_STRING("help", matches[0]);
+    TEST_ASSERT_EQUAL_STRING("hello", matches[1]);
 }

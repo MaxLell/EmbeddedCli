@@ -6,6 +6,7 @@
 #include <string.h>
 
 #include "custom_assert.h"
+#include "test_support.h"
 
 /* #############################################################################
  * # Defines
@@ -47,6 +48,9 @@ static char prv_get_last_recv_char_from_rx_buffer(void);
 
 static const cli_binding_t* prv_find_cmd(const char* const in_cmd_name);
 static uint8_t prv_get_args_from_rx_buffer(char* array_of_arguments[], uint8_t max_arguments);
+STATIC cli_bool_t prv_find_matching_strings(const char* in_partial_string, const char* const in_string_array[],
+                                            uint8_t in_nof_strings, const char* out_matches_array[],
+                                            uint8_t* out_nof_matches);
 
 static int prv_cmd_handler_help(int argc, char* argv[], void* context);
 static int prv_cmd_handler_clear_screen(int argc, char* argv[], void* context);
@@ -564,4 +568,40 @@ static void prv_plot_lines(char in_char, int length)
         prv_write_char(in_char);
     }
     prv_write_char('\n');
+}
+
+STATIC cli_bool_t prv_find_matching_strings(const char* in_partial_string, const char* const in_string_array[],
+                                            uint8_t in_nof_strings, const char* out_matches_array[],
+                                            uint8_t* out_nof_matches)
+{
+    { // Input checks
+        ASSERT(in_partial_string);
+        ASSERT(in_string_array);
+        ASSERT(in_nof_strings > 0);
+        ASSERT(out_matches_array);
+        ASSERT(out_nof_matches);
+    }
+    uint8_t in_string_idx = 0;
+    uint8_t out_matches_idx = 0;
+    cli_bool_t is_matching = CLI_FALSE;
+
+    for (in_string_idx = 0; in_string_idx < in_nof_strings; ++in_string_idx)
+    {
+        // Get the current string
+        char* current_string = in_string_array[in_string_idx];
+
+        // Check whether the partial string is in the current string
+        if (NULL != strstr(current_string, in_partial_string))
+        {
+            is_matching = CLI_TRUE;
+            out_matches_array[out_matches_idx] = current_string;
+            out_matches_idx++;
+        }
+    }
+
+    *out_nof_matches = out_matches_idx;
+
+    ASSERT(*out_nof_matches <= in_nof_strings);
+
+    return is_matching;
 }
