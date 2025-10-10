@@ -48,9 +48,9 @@ static char prv_get_last_recv_char_from_rx_buffer(void);
 
 static const cli_binding_t* prv_find_cmd(const char* const in_cmd_name);
 static uint8_t prv_get_args_from_rx_buffer(char* array_of_arguments[], uint8_t max_arguments);
-STATIC cli_bool_t prv_find_matching_strings(const char* in_partial_string, const char* const in_string_array[],
-                                            uint8_t in_nof_strings, const char* out_matches_array[],
-                                            uint8_t* out_nof_matches);
+STATIC void prv_find_matching_strings(const char* in_partial_string, const char* const in_string_array[],
+                                      uint8_t in_nof_strings, const char* out_matches_array[],
+                                      uint8_t* out_nof_matches);
 
 static int prv_cmd_handler_help(int argc, char* argv[], void* context);
 static int prv_cmd_handler_clear_screen(int argc, char* argv[], void* context);
@@ -113,6 +113,8 @@ void cli_receive(char in_char)
         return;
     }
 
+    cli_bool_t is_autocomplete_active = CLI_FALSE;
+
     switch (in_char)
     {
         case 0x7F: // DEL
@@ -132,6 +134,10 @@ void cli_receive(char in_char)
                 prv_write_char('\b');
             }
             break;
+        }
+        case '\t':
+        {
+            is_autocomplete_active = CLI_TRUE;
         }
         case '\r':
         {
@@ -154,6 +160,12 @@ void cli_receive(char in_char)
 
             break;
         }
+    }
+
+    if (CLI_TRUE == is_autocomplete_active)
+    {
+        // This can't be placed here - you dumdum ....
+        // what about argument autocomplete?
     }
 
     ASSERT(g_cli_cfg->nof_stored_chars_in_rx_buffer <= CLI_MAX_RX_BUFFER_SIZE);
@@ -570,9 +582,8 @@ static void prv_plot_lines(char in_char, int length)
     prv_write_char('\n');
 }
 
-STATIC cli_bool_t prv_find_matching_strings(const char* in_partial_string, const char* const in_string_array[],
-                                            uint8_t in_nof_strings, const char* out_matches_array[],
-                                            uint8_t* out_nof_matches)
+STATIC void prv_find_matching_strings(const char* in_partial_string, const char* const in_string_array[],
+                                      uint8_t in_nof_strings, const char* out_matches_array[], uint8_t* out_nof_matches)
 {
     { // Input checks
         ASSERT(in_partial_string);

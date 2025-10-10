@@ -609,11 +609,23 @@ void test_prv_find_matching_strings(void)
     const char* input_strings[] = {"help", "hello", "clear"};
     const char* matches[10];
     uint8_t num_matches;
-    uint8_t found =
-        prv_find_matching_strings("he", input_strings, CLI_GET_ARRAY_SIZE(input_strings), matches, &num_matches);
 
-    TEST_ASSERT_TRUE(found);
+    prv_find_matching_strings("he", input_strings, CLI_GET_ARRAY_SIZE(input_strings), matches, &num_matches);
+
     TEST_ASSERT_EQUAL(2, num_matches);
     TEST_ASSERT_EQUAL_STRING("help", matches[0]);
     TEST_ASSERT_EQUAL_STRING("hello", matches[1]);
+}
+
+// void test_cli_receive_found_one_match(void) {}
+
+void test_cli_receive_found_several_matches(void)
+{
+    // Register the hello world commands (help command is built-in)
+    cli_register(&cli_bindings[0]); // hello command
+
+    // test with args -> enter 'hel' + tab
+    cli_receive('h');
+    cli_receive('e');
+    cli_receive('\t');
 }
