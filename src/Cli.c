@@ -138,6 +138,8 @@ void cli_receive(char in_char)
         case '\t':
         {
             is_autocomplete_active = CLI_TRUE;
+            // cli_print("Autocomplete not implemented yet\n");
+            break;
         }
         case '\r':
         {
@@ -164,8 +166,69 @@ void cli_receive(char in_char)
 
     if (CLI_TRUE == is_autocomplete_active)
     {
-        // This can't be placed here - you dumdum ....
-        // what about argument autocomplete?
+        is_autocomplete_active = CLI_FALSE;
+
+        // Check that there is no ' ' character in the rx buffer - no autocompletes on arguments only commands
+        cli_bool_t is_command_part = CLI_TRUE;
+        for (uint8_t i = 0; i < g_cli_cfg->nof_stored_chars_in_rx_buffer; i++)
+        {
+            if (' ' == g_cli_cfg->rx_char_buffer[i])
+            {
+                is_command_part = CLI_FALSE;
+                break;
+            }
+        }
+
+        if (CLI_TRUE == is_command_part)
+        {
+            // Find all matching commands
+            const char* command_names[CLI_MAX_NOF_CALLBACKS] = {0};
+            for (uint8_t i = 0; i < g_cli_cfg->nof_stored_cmd_bindings; i++)
+            {
+                command_names[i] = g_cli_cfg->cmd_bindings_buffer[i].name;
+            }
+
+            const char* matches[CLI_MAX_NOF_CALLBACKS] = {0};
+            uint8_t nof_matches = 0;
+
+            prv_find_matching_strings(g_cli_cfg->rx_char_buffer, command_names, g_cli_cfg->nof_stored_cmd_bindings,
+                                      matches, &nof_matches);
+            if (nof_matches == 1)
+            {
+                // Only one match - autocomplete the command
+                // Clear the current line
+                for (uint8_t i = 0; i < g_cli_cfg->nof_stored_chars_in_rx_buffer; i++)
+                {
+                    prv_write_char('\b');
+                }
+
+                // Copy the match into the rx buffer
+                strncpy(g_cli_cfg->rx_char_buffer, matches[0], CLI_MAX_RX_BUFFER_SIZE);
+                g_cli_cfg->nof_stored_chars_in_rx_buffer = strlen(matches[0]);
+
+                // Write the autocompleted command to the console
+                prv_write_string(g_cli_cfg->rx_char_buffer);
+            }
+            else if (nof_matches > 1)
+            {
+                // Multiple matches - list them
+                // Clear the current line
+                for (uint8_t i = 0; i < g_cli_cfg->nof_stored_chars_in_rx_buffer; i++)
+                {
+                    prv_write_char('\b');
+                }
+
+                for (uint8_t i = 0; i < nof_matches; i++)
+                {
+                    prv_write_string(matches[i]);
+                    prv_write_char(',');
+                }
+                prv_write_char('\n');
+                // Reprint the prompt and current input
+                // prv_write_cli_prompt();
+                prv_write_string(g_cli_cfg->rx_char_buffer);
+            }
+        }
     }
 
     ASSERT(g_cli_cfg->nof_stored_chars_in_rx_buffer <= CLI_MAX_RX_BUFFER_SIZE);
@@ -594,17 +657,15 @@ STATIC void prv_find_matching_strings(const char* in_partial_string, const char*
     }
     uint8_t in_string_idx = 0;
     uint8_t out_matches_idx = 0;
-    cli_bool_t is_matching = CLI_FALSE;
 
     for (in_string_idx = 0; in_string_idx < in_nof_strings; ++in_string_idx)
     {
         // Get the current string
-        char* current_string = in_string_array[in_string_idx];
+        const char* current_string = in_string_array[in_string_idx];
 
         // Check whether the partial string is in the current string
         if (NULL != strstr(current_string, in_partial_string))
         {
-            is_matching = CLI_TRUE;
             out_matches_array[out_matches_idx] = current_string;
             out_matches_idx++;
         }
@@ -613,6 +674,4 @@ STATIC void prv_find_matching_strings(const char* in_partial_string, const char*
     *out_nof_matches = out_matches_idx;
 
     ASSERT(*out_nof_matches <= in_nof_strings);
-
-    return is_matching;
 }
