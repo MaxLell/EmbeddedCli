@@ -196,8 +196,11 @@ void cli_receive(char in_char)
             if (nof_matches == 1)
             {
                 // Only one match - autocomplete the command
-                // Clear the current line
-                for (uint8_t i = 0; i < g_cli_cfg->nof_stored_chars_in_rx_buffer; i++)
+                // Calculate how many characters we need to delete (current input)
+                uint8_t chars_to_delete = g_cli_cfg->nof_stored_chars_in_rx_buffer;
+
+                // Delete the current input from the display
+                for (uint8_t i = 0; i < chars_to_delete; i++)
                 {
                     prv_write_char('\b');
                 }
@@ -211,22 +214,8 @@ void cli_receive(char in_char)
             }
             else if (nof_matches > 1)
             {
-                // Multiple matches - list them
-                // Clear the current line
-                for (uint8_t i = 0; i < g_cli_cfg->nof_stored_chars_in_rx_buffer; i++)
-                {
-                    prv_write_char('\b');
-                }
-
-                for (uint8_t i = 0; i < nof_matches; i++)
-                {
-                    prv_write_string(matches[i]);
-                    prv_write_char(',');
-                }
-                prv_write_char('\n');
-                // Reprint the prompt and current input
-                // prv_write_cli_prompt();
-                prv_write_string(g_cli_cfg->rx_char_buffer);
+                // Multiple matches - do nothing (like bash tab completion)
+                // This means the user needs to type more characters to disambiguate
             }
         }
     }
