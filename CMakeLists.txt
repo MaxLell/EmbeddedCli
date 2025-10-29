@@ -15,7 +15,7 @@ file(GLOB CLI_SOURCES "${CMAKE_SOURCE_DIR}/src/*.c")
 # Collect custom_assert sources
 file(GLOB CUSTOM_ASSERT_SOURCES "${CMAKE_SOURCE_DIR}/utils/embedded_utils/utils/*.c")
 
-add_executable(firmware-cli ${CMAKE_SOURCE_DIR}/main.c ${CLI_SOURCES} ${CUSTOM_ASSERT_SOURCES})
+add_executable(firmware-cli ${CMAKE_SOURCE_DIR}/example/host.c ${CLI_SOURCES} ${CUSTOM_ASSERT_SOURCES})
 
 # Include directories
 target_include_directories(firmware-cli PRIVATE 
