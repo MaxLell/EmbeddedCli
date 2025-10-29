@@ -35,11 +35,11 @@
 // ###########################################################################
 
 /** Demo command handlers used in the example program. */
-int cmd_hello_world(int argc, char* argv[], void* context);
-int cmd_echo_string(int argc, char* argv[], void* context);
-int cmd_display_args(int argc, char* argv[], void* context);
+int prv_cmd_hello_world(int argc, char* argv[], void* context);
+int prv_cmd_echo_string(int argc, char* argv[], void* context);
+int prv_cmd_display_args(int argc, char* argv[], void* context);
 
-int cmd_hello_world(int argc, char* argv[], void* context)
+int prv_cmd_hello_world(int argc, char* argv[], void* context)
 {
     (void)argc;
     (void)argv;
@@ -48,7 +48,7 @@ int cmd_hello_world(int argc, char* argv[], void* context)
     return CLI_OK_STATUS;
 }
 
-int cmd_echo_string(int argc, char* argv[], void* context)
+int prv_cmd_echo_string(int argc, char* argv[], void* context)
 {
     if (argc != 2)
     {
@@ -61,7 +61,7 @@ int cmd_echo_string(int argc, char* argv[], void* context)
     return CLI_OK_STATUS;
 }
 
-int cmd_display_args(int argc, char* argv[], void* context)
+int prv_cmd_display_args(int argc, char* argv[], void* context)
 {
     int i;
     for (i = 0; i < argc; i++)
@@ -82,9 +82,9 @@ int cmd_dummy(int argc, char* argv[], void* context)
 }
 
 static cli_binding_t cli_bindings[] = {
-    {"hello", cmd_hello_world, NULL, "Say hello"},
-    {"args", cmd_display_args, NULL, "Displays the given cli arguments"},
-    {"echo", cmd_echo_string, NULL, "Echoes the given string"},
+    {"hello", prv_cmd_hello_world, NULL, "Say hello"},
+    {"args", prv_cmd_display_args, NULL, "Displays the given cli arguments"},
+    {"echo", prv_cmd_echo_string, NULL, "Echoes the given string"},
     {"dummy", cmd_dummy, NULL, "dummy stuffens"},
 };
 
