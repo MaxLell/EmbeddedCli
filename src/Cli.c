@@ -50,7 +50,7 @@
  * # static variables
  * ###########################################################################*/
 
-static cli_cfg_t* g_cli_cfg = NULL;
+static cli_cfg_t* g_cli_cfg_reference = NULL;
 
 /* #############################################################################
  * # static function prototypes
@@ -90,7 +90,7 @@ void cli_init(cli_cfg_t* const inout_module_cfg, cli_put_char_fn in_put_char_fn)
     { // Input Checks
         ASSERT(inout_module_cfg);
         ASSERT(false == inout_module_cfg->is_initialized);
-        ASSERT(NULL == g_cli_cfg); // only one instance allowed
+        ASSERT(NULL == g_cli_cfg_reference); // only one instance allowed
         ASSERT(in_put_char_fn);
     }
 
@@ -102,9 +102,9 @@ void cli_init(cli_cfg_t* const inout_module_cfg, cli_put_char_fn in_put_char_fn)
     inout_module_cfg->nof_stored_cmd_bindings = 0;
 
     // Store the config locally in a static variable
-    g_cli_cfg = inout_module_cfg;
+    g_cli_cfg_reference = inout_module_cfg;
 
-    g_cli_cfg->is_initialized = true;
+    g_cli_cfg_reference->is_initialized = true;
 
     // Register the default commands
     cli_binding_t help_cmd_binding = {"help", prv_cmd_handler_help, NULL, "List all commands"};
@@ -125,7 +125,7 @@ void cli_init(cli_cfg_t* const inout_module_cfg, cli_put_char_fn in_put_char_fn)
 
 void cli_receive(char in_char)
 {
-    prv_verify_object_integrity(g_cli_cfg);
+    prv_verify_object_integrity(g_cli_cfg_reference);
 
     if (true == prv_is_rx_buffer_full())
     {
@@ -144,17 +144,17 @@ void cli_receive(char in_char)
         case 0x7F: // DEL
         case '\b': // Backspace
         {
-            bool rx_buffer_has_chars = (g_cli_cfg->nof_stored_chars_in_rx_buffer > 0);
+            bool rx_buffer_has_chars = (g_cli_cfg_reference->nof_stored_chars_in_rx_buffer > 0);
 
             // Only delete characters, when there are characters in the buffer.
             if (true == rx_buffer_has_chars)
             {
-                g_cli_cfg->nof_stored_chars_in_rx_buffer--;
-                uint8_t idx = g_cli_cfg->nof_stored_chars_in_rx_buffer;
+                g_cli_cfg_reference->nof_stored_chars_in_rx_buffer--;
+                uint8_t idx = g_cli_cfg_reference->nof_stored_chars_in_rx_buffer;
 
                 // Remove the last character (the one that was deleted)
                 // Replace it with a null character
-                g_cli_cfg->rx_char_buffer[idx] = '\0';
+                g_cli_cfg_reference->rx_char_buffer[idx] = '\0';
 
                 // Remove character from cli
                 prv_write_char('\b');
@@ -177,11 +177,11 @@ void cli_receive(char in_char)
         default:
         {
             // Add the character to the buffer
-            uint8_t idx = g_cli_cfg->nof_stored_chars_in_rx_buffer;
-            g_cli_cfg->rx_char_buffer[idx] = in_char;
-            g_cli_cfg->nof_stored_chars_in_rx_buffer++;
+            uint8_t idx = g_cli_cfg_reference->nof_stored_chars_in_rx_buffer;
+            g_cli_cfg_reference->rx_char_buffer[idx] = in_char;
+            g_cli_cfg_reference->nof_stored_chars_in_rx_buffer++;
 
-            prv_verify_object_integrity(g_cli_cfg);
+            prv_verify_object_integrity(g_cli_cfg_reference);
 
             // write the character back out to the console
             prv_write_char(in_char);
@@ -190,7 +190,7 @@ void cli_receive(char in_char)
         }
     }
 
-    ASSERT(g_cli_cfg->nof_stored_chars_in_rx_buffer <= CLI_MAX_RX_BUFFER_SIZE);
+    ASSERT(g_cli_cfg_reference->nof_stored_chars_in_rx_buffer <= CLI_MAX_RX_BUFFER_SIZE);
 }
 
 void cli_process()
@@ -199,7 +199,7 @@ void cli_process()
     uint8_t argc = 0;
     int cmd_status = CLI_FAIL_STATUS;
 
-    prv_verify_object_integrity(g_cli_cfg);
+    prv_verify_object_integrity(g_cli_cfg_reference);
 
     if ((prv_get_last_recv_char_from_rx_buffer() != '\n') && ((false == prv_is_rx_buffer_full())))
     {
@@ -252,7 +252,7 @@ void cli_register(const cli_binding_t* const in_cmd_binding)
         ASSERT(in_cmd_binding->help);
         ASSERT(in_cmd_binding->cmd_fn);
 
-        prv_verify_object_integrity(g_cli_cfg);
+        prv_verify_object_integrity(g_cli_cfg_reference);
     }
 
     if ((NULL == in_cmd_binding) || (0 == strlen(in_cmd_binding->name))
@@ -264,9 +264,9 @@ void cli_register(const cli_binding_t* const in_cmd_binding)
     uint8_t does_binding_exist = false;
     uint8_t is_binding_stored = false;
 
-    for (uint8_t i = 0; i < g_cli_cfg->nof_stored_cmd_bindings; i++)
+    for (uint8_t i = 0; i < g_cli_cfg_reference->nof_stored_cmd_bindings; i++)
     {
-        const cli_binding_t* cmd_binding = &g_cli_cfg->cmd_bindings_buffer[i];
+        const cli_binding_t* cmd_binding = &g_cli_cfg_reference->cmd_bindings_buffer[i];
         if (0 == strncmp(cmd_binding->name, in_cmd_binding->name, CLI_MAX_CMD_NAME_LENGTH))
         {
             does_binding_exist = true;
@@ -275,12 +275,12 @@ void cli_register(const cli_binding_t* const in_cmd_binding)
     }
     ASSERT(false == does_binding_exist);
 
-    if (g_cli_cfg->nof_stored_cmd_bindings < CLI_MAX_NOF_CALLBACKS)
+    if (g_cli_cfg_reference->nof_stored_cmd_bindings < CLI_MAX_NOF_CALLBACKS)
     {
         //  Deep Copy the binding into the buffer
-        uint8_t idx = g_cli_cfg->nof_stored_cmd_bindings;
-        memcpy(&g_cli_cfg->cmd_bindings_buffer[idx], in_cmd_binding, sizeof(cli_binding_t));
-        g_cli_cfg->nof_stored_cmd_bindings++;
+        uint8_t idx = g_cli_cfg_reference->nof_stored_cmd_bindings;
+        memcpy(&g_cli_cfg_reference->cmd_bindings_buffer[idx], in_cmd_binding, sizeof(cli_binding_t));
+        g_cli_cfg_reference->nof_stored_cmd_bindings++;
 
         // Mark that the binding was stored
         is_binding_stored = true;
@@ -302,32 +302,32 @@ void cli_unregister(const char* const in_cmd_name)
         ASSERT(strlen(in_cmd_name) > 0);
         ASSERT(strlen(in_cmd_name) < CLI_MAX_CMD_NAME_LENGTH);
 
-        ASSERT(g_cli_cfg->nof_stored_cmd_bindings > 0);
+        ASSERT(g_cli_cfg_reference->nof_stored_cmd_bindings > 0);
 
-        prv_verify_object_integrity(g_cli_cfg);
+        prv_verify_object_integrity(g_cli_cfg_reference);
     }
 
     if ((NULL == in_cmd_name) || (0 == strlen(in_cmd_name)) || (strlen(in_cmd_name) >= CLI_MAX_CMD_NAME_LENGTH)
-        || (g_cli_cfg->nof_stored_cmd_bindings == 0))
+        || (g_cli_cfg_reference->nof_stored_cmd_bindings == 0))
     {
         return;
     }
 
     uint8_t is_binding_found = false;
 
-    for (uint8_t i = 0; i < g_cli_cfg->nof_stored_cmd_bindings; i++)
+    for (uint8_t i = 0; i < g_cli_cfg_reference->nof_stored_cmd_bindings; i++)
     {
-        cli_binding_t* cmd_binding = &g_cli_cfg->cmd_bindings_buffer[i];
+        cli_binding_t* cmd_binding = &g_cli_cfg_reference->cmd_bindings_buffer[i];
         if (0 == strncmp(cmd_binding->name, in_cmd_name, CLI_MAX_CMD_NAME_LENGTH))
         {
             is_binding_found = true;
             // Shift all following bindings one position to the left
-            for (uint8_t j = i; j < g_cli_cfg->nof_stored_cmd_bindings - 1; j++)
+            for (uint8_t j = i; j < g_cli_cfg_reference->nof_stored_cmd_bindings - 1; j++)
             {
-                memcpy(&g_cli_cfg->cmd_bindings_buffer[j], &g_cli_cfg->cmd_bindings_buffer[j + 1],
+                memcpy(&g_cli_cfg_reference->cmd_bindings_buffer[j], &g_cli_cfg_reference->cmd_bindings_buffer[j + 1],
                        sizeof(cli_binding_t));
             }
-            g_cli_cfg->nof_stored_cmd_bindings--;
+            g_cli_cfg_reference->nof_stored_cmd_bindings--;
             break;
         }
     }
@@ -341,7 +341,7 @@ void cli_unregister(const char* const in_cmd_name)
 void cli_print(const char* fmt, ...)
 {
     { // Input Checks
-        prv_verify_object_integrity(g_cli_cfg);
+        prv_verify_object_integrity(g_cli_cfg_reference);
         ASSERT(fmt);
     }
 
@@ -359,10 +359,10 @@ void cli_deinit(cli_cfg_t* const inout_module_cfg)
 {
     { // Input Checks
         prv_verify_object_integrity(inout_module_cfg);
-        ASSERT(inout_module_cfg == g_cli_cfg); // only one instance allowed
+        ASSERT(inout_module_cfg == g_cli_cfg_reference); // only one instance allowed
     }
     inout_module_cfg->is_initialized = false;
-    g_cli_cfg = NULL;
+    g_cli_cfg_reference = NULL;
 
     // Clear the config structure
     memset(inout_module_cfg, 0, sizeof(cli_cfg_t));
@@ -375,7 +375,7 @@ void cli_deinit(cli_cfg_t* const inout_module_cfg)
 static void prv_write_string(const char* in_string)
 {
     {
-        prv_verify_object_integrity(g_cli_cfg);
+        prv_verify_object_integrity(g_cli_cfg_reference);
     }
     for (const char* current_char = in_string; *current_char != '\0'; current_char++)
     {
@@ -386,7 +386,7 @@ static void prv_write_string(const char* in_string)
 static void prv_write_char(char in_char)
 {
     { // Input Checks
-        prv_verify_object_integrity(g_cli_cfg);
+        prv_verify_object_integrity(g_cli_cfg_reference);
     }
     if ('\n' == in_char) // User pressed Enter
     {
@@ -408,15 +408,15 @@ static void prv_write_char(char in_char)
 static void prv_put_char(char in_char)
 {
     { // Input Checks
-        prv_verify_object_integrity(g_cli_cfg);
+        prv_verify_object_integrity(g_cli_cfg_reference);
     }
-    g_cli_cfg->put_char_fn(in_char);
+    g_cli_cfg_reference->put_char_fn(in_char);
 }
 
 static void prv_write_cli_prompt()
 {
     { // Input Checks
-        prv_verify_object_integrity(g_cli_cfg);
+        prv_verify_object_integrity(g_cli_cfg_reference);
     }
     prv_plot_lines(CLI_PROMPT_SPACER, CLI_OUTPUT_WIDTH);
     prv_write_string(CLI_PROMPT);
@@ -425,7 +425,7 @@ static void prv_write_cli_prompt()
 static void prv_write_cmd_unknown(const char* const in_cmd_name)
 {
     { // Input Checks
-        prv_verify_object_integrity(g_cli_cfg);
+        prv_verify_object_integrity(g_cli_cfg_reference);
     }
     prv_write_string("Unknown command: ");
     prv_write_string(in_cmd_name);
@@ -436,39 +436,39 @@ static void prv_write_cmd_unknown(const char* const in_cmd_name)
 static void prv_reset_rx_buffer()
 {
     { // Input Checks
-        prv_verify_object_integrity(g_cli_cfg);
+        prv_verify_object_integrity(g_cli_cfg_reference);
     }
-    memset(g_cli_cfg->rx_char_buffer, 0, CLI_MAX_RX_BUFFER_SIZE);
-    g_cli_cfg->nof_stored_chars_in_rx_buffer = 0;
+    memset(g_cli_cfg_reference->rx_char_buffer, 0, CLI_MAX_RX_BUFFER_SIZE);
+    g_cli_cfg_reference->nof_stored_chars_in_rx_buffer = 0;
 }
 
 static bool prv_is_rx_buffer_full()
 {
     { // Input Checks
-        prv_verify_object_integrity(g_cli_cfg);
+        prv_verify_object_integrity(g_cli_cfg_reference);
     }
-    return (g_cli_cfg->nof_stored_chars_in_rx_buffer < CLI_MAX_RX_BUFFER_SIZE) ? false : true;
+    return (g_cli_cfg_reference->nof_stored_chars_in_rx_buffer < CLI_MAX_RX_BUFFER_SIZE) ? false : true;
 }
 
 static char prv_get_last_recv_char_from_rx_buffer(void)
 {
     { // Input Checks
-        prv_verify_object_integrity(g_cli_cfg);
+        prv_verify_object_integrity(g_cli_cfg_reference);
     }
-    return g_cli_cfg->rx_char_buffer[g_cli_cfg->nof_stored_chars_in_rx_buffer - 1];
+    return g_cli_cfg_reference->rx_char_buffer[g_cli_cfg_reference->nof_stored_chars_in_rx_buffer - 1];
 }
 
 static const cli_binding_t* prv_find_cmd(const char* const in_cmd_name)
 {
     { // Input Checks
-        prv_verify_object_integrity(g_cli_cfg);
+        prv_verify_object_integrity(g_cli_cfg_reference);
         ASSERT(in_cmd_name);
-        ASSERT(g_cli_cfg->nof_stored_cmd_bindings > 0);
+        ASSERT(g_cli_cfg_reference->nof_stored_cmd_bindings > 0);
     }
 
-    for (uint8_t idx = 0; idx < g_cli_cfg->nof_stored_cmd_bindings; ++idx)
+    for (uint8_t idx = 0; idx < g_cli_cfg_reference->nof_stored_cmd_bindings; ++idx)
     {
-        const cli_binding_t* cmd_binding = &g_cli_cfg->cmd_bindings_buffer[idx];
+        const cli_binding_t* cmd_binding = &g_cli_cfg_reference->cmd_bindings_buffer[idx];
         if (0 == strncmp(cmd_binding->name, in_cmd_name, CLI_MAX_CMD_NAME_LENGTH))
         {
             return cmd_binding;
@@ -493,20 +493,20 @@ static uint8_t prv_get_args_from_rx_buffer(char* array_of_arguments[], uint8_t m
         ASSERT(array_of_arguments);
         ASSERT(max_arguments > 0);
 
-        prv_verify_object_integrity(g_cli_cfg);
+        prv_verify_object_integrity(g_cli_cfg_reference);
     }
 
     uint8_t nof_identified_arguments = 0;
     char* next_argument = NULL;
 
     // Process the Buffer - tokenize arguments separated by spaces or newlines
-    for (uint8_t i = 0; i < g_cli_cfg->nof_stored_chars_in_rx_buffer; i++)
+    for (uint8_t i = 0; i < g_cli_cfg_reference->nof_stored_chars_in_rx_buffer; i++)
     {
         ASSERT(nof_identified_arguments <= max_arguments);
 
-        char* const current_char = &g_cli_cfg->rx_char_buffer[i];
+        char* const current_char = &g_cli_cfg_reference->rx_char_buffer[i];
         const bool is_delimiter_char = (' ' == *current_char || '\n' == *current_char);
-        const bool is_last_char = (i == (g_cli_cfg->nof_stored_chars_in_rx_buffer - 1));
+        const bool is_last_char = (i == (g_cli_cfg_reference->nof_stored_chars_in_rx_buffer - 1));
 
         if (is_delimiter_char)
         {
@@ -544,13 +544,13 @@ static uint8_t prv_get_args_from_rx_buffer(char* array_of_arguments[], uint8_t m
 static int prv_cmd_handler_help(int argc, char* argv[], void* context)
 {
     { // Input Checks
-        prv_verify_object_integrity(g_cli_cfg);
+        prv_verify_object_integrity(g_cli_cfg_reference);
     }
 
     // Create a list of all registered commands
-    for (uint8_t i = 0; i < g_cli_cfg->nof_stored_cmd_bindings; ++i)
+    for (uint8_t i = 0; i < g_cli_cfg_reference->nof_stored_cmd_bindings; ++i)
     {
-        const cli_binding_t* ptCmdBinding = &g_cli_cfg->cmd_bindings_buffer[i];
+        const cli_binding_t* ptCmdBinding = &g_cli_cfg_reference->cmd_bindings_buffer[i];
         prv_write_string("* ");
         prv_write_string(ptCmdBinding->name);
         prv_write_string(": \n              ");
@@ -639,8 +639,7 @@ static bool prv_is_char_in_string(char character, const char* in_string, uint8_t
 {
     { // Input Checks
         ASSERT(in_string);
-        ASSERT(string_length != 0);
-        prv_verify_object_integrity(g_cli_cfg);
+        prv_verify_object_integrity(g_cli_cfg_reference);
     }
 
     bool is_space_char_in_string = false;
@@ -662,14 +661,14 @@ static bool prv_is_char_in_string(char character, const char* in_string, uint8_t
 static void prv_autocomplete_command(void)
 {
     // input Checks
-    prv_verify_object_integrity(g_cli_cfg);
+    prv_verify_object_integrity(g_cli_cfg_reference);
 
     bool is_command_string = true;
 
     // if there is a space character in the string, it means that the command was already entered fully,
     // so there is no reason for further autocompletion
-    is_command_string =
-        !prv_is_char_in_string(' ', g_cli_cfg->rx_char_buffer, g_cli_cfg->nof_stored_chars_in_rx_buffer);
+    is_command_string = !prv_is_char_in_string(' ', g_cli_cfg_reference->rx_char_buffer,
+                                               g_cli_cfg_reference->nof_stored_chars_in_rx_buffer);
     if (false == is_command_string)
     {
         return;
@@ -677,16 +676,16 @@ static void prv_autocomplete_command(void)
 
     // Create a copy of the command names and place them in an array
     const char* command_names[CLI_MAX_NOF_CALLBACKS] = {0};
-    for (uint8_t i = 0; i < g_cli_cfg->nof_stored_cmd_bindings; i++)
+    for (uint8_t i = 0; i < g_cli_cfg_reference->nof_stored_cmd_bindings; i++)
     {
-        command_names[i] = g_cli_cfg->cmd_bindings_buffer[i].name;
+        command_names[i] = g_cli_cfg_reference->cmd_bindings_buffer[i].name;
     }
 
     const char* matches[CLI_MAX_NOF_CALLBACKS] = {0};
     uint8_t nof_matches = 0;
 
-    prv_find_matching_strings(g_cli_cfg->rx_char_buffer, command_names, g_cli_cfg->nof_stored_cmd_bindings, matches,
-                              &nof_matches);
+    prv_find_matching_strings(g_cli_cfg_reference->rx_char_buffer, command_names,
+                              g_cli_cfg_reference->nof_stored_cmd_bindings, matches, &nof_matches);
     if (nof_matches == 1)
     {
         ASSERT(strlen(matches[0]) > 0);
@@ -695,20 +694,20 @@ static void prv_autocomplete_command(void)
         // If there are more matches, then the user needs to provide more letters for specification
 
         // Calculate how many characters we need to delete (current input)
-        uint8_t chars_to_delete = g_cli_cfg->nof_stored_chars_in_rx_buffer;
+        uint8_t chars_to_delete = g_cli_cfg_reference->nof_stored_chars_in_rx_buffer;
 
         // Delete the current input from the display and the rx buffer
         for (uint8_t i = 0; i < chars_to_delete; i++)
         {
-            g_cli_cfg->rx_char_buffer[i] = '\0';
+            g_cli_cfg_reference->rx_char_buffer[i] = '\0';
             prv_write_char('\b');
         }
 
         // Replace the content of the rx buffer with the match
-        strncpy(g_cli_cfg->rx_char_buffer, matches[0], CLI_MAX_RX_BUFFER_SIZE);
-        g_cli_cfg->nof_stored_chars_in_rx_buffer = strlen(matches[0]);
+        strncpy(g_cli_cfg_reference->rx_char_buffer, matches[0], CLI_MAX_RX_BUFFER_SIZE);
+        g_cli_cfg_reference->nof_stored_chars_in_rx_buffer = strlen(matches[0]);
 
         // Write the autocompleted command to the console
-        prv_write_string(g_cli_cfg->rx_char_buffer);
+        prv_write_string(g_cli_cfg_reference->rx_char_buffer);
     }
 }
