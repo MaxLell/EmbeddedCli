@@ -17,7 +17,7 @@ This will automatically build and run the demo, which can be run on a host compu
 
 The demo can be found in `example/host.c`. This should be fairly self-explanatory. This demo covers all functionality of the EmbeddedCli
 
-__Sample session (typed at console):__
+## Explanation on the demo
 
 Once you launched the demo, you can enter your command and hit enter. For a simple start: enter `help`, then the following output will be generated
 
@@ -61,6 +61,8 @@ argv[4] --> "d"
 Status -> [OK]   
 ==================================================
 ```
+
+For more details on the workings of the cli, please follow along in the `example/host.c` file. There is more documentation provided on how to use the EmbeddedCli
 
 ---
 
