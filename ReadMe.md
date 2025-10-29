@@ -19,6 +19,10 @@ The demo can be found in `example/host.c`. This should be fairly self-explanator
 
 __Sample session (typed at console):__
 
+Once you launched the demo, you can enter your command and hit enter. For a simple start: enter `help`, then the following output will be generated
+
+You can also enter `cle` and then hit the `Tab` key, and the cli autocompletes your command string (for the current example of `cle` the command is completed to `clear`). You can now press enter and everything works the same as if you would have entered `clear`.
+
 ```
 ==================================================
 > help
