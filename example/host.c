@@ -50,8 +50,18 @@ static void prv_assert_failed(const char* file, uint32_t line, const char* expr)
 // ###########################################################################
 // # Private Variables
 // ###########################################################################
+
+// embedded cli object - contains all data. This memory is to be managed by the user
 static cli_cfg_t g_cli_cfg = {0};
 
+/**
+ * 'command name' - 'command handler' - 'pointer to context' - 'help string'
+ * 
+ * - The command name is the ... name of the command
+ * - The 'command handler' is the function pointer to the function that is to be called, when the command was successfully entered
+ * - The 'pointer to context' is the context which the user can provide to his handler function - this can also be NULL
+ * - The 'help string' is the string that is printed when the help command is executed. (Have a look at the Readme.md file for an example)
+ */
 static cli_binding_t cli_bindings[] = {
     {"hello", prv_cmd_hello_world, NULL, "Say hello"},
     {"args", prv_cmd_display_args, NULL, "Displays the given cli arguments"},
