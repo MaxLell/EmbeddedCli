@@ -48,6 +48,8 @@ static uint8_t prv_get_args_from_rx_buffer(char* array_of_arguments[], uint8_t m
 STATIC void prv_find_matching_strings(const char* in_partial_string, const char* const in_string_array[],
                                       uint8_t in_nof_strings, const char* out_matches_array[],
                                       uint8_t* out_nof_matches);
+static bool prv_is_char_in_string(char character, const char* in_string, uint8_t string_length);
+static void prv_autocomplete_command(void);
 
 static int prv_cmd_handler_help(int argc, char* argv[], void* context);
 static int prv_cmd_handler_clear_screen(int argc, char* argv[], void* context);
@@ -113,8 +115,6 @@ void cli_receive(char in_char)
         return;
     }
 
-    bool is_autocomplete_active = false;
-
     switch (in_char)
     {
         case 0x7F: // DEL
@@ -139,7 +139,7 @@ void cli_receive(char in_char)
         }
         case '\t': // Tab
         {
-            is_autocomplete_active = true;
+            prv_autocomplete_command();
             break;
         }
         case '\r': // Carriage Return
@@ -162,60 +162,6 @@ void cli_receive(char in_char)
             prv_write_char(in_char);
 
             break;
-        }
-    }
-
-    if (true == is_autocomplete_active)
-    {
-        bool is_command_string = true;
-
-        // Reset the autocomplete Flag
-        is_autocomplete_active = false;
-
-        // Check that there is no ' ' character in the rx buffer - no autocompletes on arguments; only commands
-        for (uint8_t i = 0; i < g_cli_cfg->nof_stored_chars_in_rx_buffer; i++)
-        {
-            if (' ' == g_cli_cfg->rx_char_buffer[i])
-            {
-                is_command_string = false;
-                break;
-            }
-        }
-
-        if (true == is_command_string)
-        {
-            // Find all matching commands
-            const char* command_names[CLI_MAX_NOF_CALLBACKS] = {0};
-            for (uint8_t i = 0; i < g_cli_cfg->nof_stored_cmd_bindings; i++)
-            {
-                command_names[i] = g_cli_cfg->cmd_bindings_buffer[i].name;
-            }
-
-            const char* matches[CLI_MAX_NOF_CALLBACKS] = {0};
-            uint8_t nof_matches = 0;
-
-            prv_find_matching_strings(g_cli_cfg->rx_char_buffer, command_names, g_cli_cfg->nof_stored_cmd_bindings,
-                                      matches, &nof_matches);
-            if (nof_matches == 1)
-            {
-                // Only one match - autocomplete the command
-                // If there are more matches, then the user needs to provide more letters for specification
-                // Calculate how many characters we need to delete (current input)
-                uint8_t chars_to_delete = g_cli_cfg->nof_stored_chars_in_rx_buffer;
-
-                // Delete the current input from the display
-                for (uint8_t i = 0; i < chars_to_delete; i++)
-                {
-                    prv_write_char('\b');
-                }
-
-                // Copy the match into the rx buffer
-                strncpy(g_cli_cfg->rx_char_buffer, matches[0], CLI_MAX_RX_BUFFER_SIZE);
-                g_cli_cfg->nof_stored_chars_in_rx_buffer = strlen(matches[0]);
-
-                // Write the autocompleted command to the console
-                prv_write_string(g_cli_cfg->rx_char_buffer);
-            }
         }
     }
 
@@ -662,4 +608,82 @@ STATIC void prv_find_matching_strings(const char* in_partial_string, const char*
     *out_nof_matches = out_matches_idx;
 
     ASSERT(*out_nof_matches <= in_nof_strings);
+}
+
+static bool prv_is_char_in_string(char character, const char* in_string, uint8_t string_length)
+{
+    { // Input Checks
+        ASSERT(in_string);
+        ASSERT(string_length != 0);
+        prv_verify_object_integrity(g_cli_cfg);
+    }
+
+    bool is_space_char_in_string = false;
+
+    // Check that there is no ' ' character in the rx buffer - no autocompletes on arguments; only commands
+    // 'cmd' + ' ' + 'args[]'
+    for (uint8_t i = 0; i < string_length; i++)
+    {
+        if (character == in_string[i])
+        {
+            is_space_char_in_string = true;
+            break;
+        }
+    }
+
+    return is_space_char_in_string;
+}
+
+static void prv_autocomplete_command(void)
+{
+    // input Checks
+    prv_verify_object_integrity(g_cli_cfg);
+
+    bool is_command_string = true;
+
+    // if there is a space character in the string, it means that the command was already entered fully,
+    // so there is no reason for further autocompletion
+    is_command_string =
+        !prv_is_char_in_string(' ', g_cli_cfg->rx_char_buffer, g_cli_cfg->nof_stored_chars_in_rx_buffer);
+    if (false == is_command_string)
+    {
+        return;
+    }
+
+    // Create a copy of the command names and place them in an array
+    const char* command_names[CLI_MAX_NOF_CALLBACKS] = {0};
+    for (uint8_t i = 0; i < g_cli_cfg->nof_stored_cmd_bindings; i++)
+    {
+        command_names[i] = g_cli_cfg->cmd_bindings_buffer[i].name;
+    }
+
+    const char* matches[CLI_MAX_NOF_CALLBACKS] = {0};
+    uint8_t nof_matches = 0;
+
+    prv_find_matching_strings(g_cli_cfg->rx_char_buffer, command_names, g_cli_cfg->nof_stored_cmd_bindings, matches,
+                              &nof_matches);
+    if (nof_matches == 1)
+    {
+        ASSERT(strlen(matches[0]) > 0);
+
+        // Only one match - autocomplete the command
+        // If there are more matches, then the user needs to provide more letters for specification
+
+        // Calculate how many characters we need to delete (current input)
+        uint8_t chars_to_delete = g_cli_cfg->nof_stored_chars_in_rx_buffer;
+
+        // Delete the current input from the display and the rx buffer
+        for (uint8_t i = 0; i < chars_to_delete; i++)
+        {
+            g_cli_cfg->rx_char_buffer[i] = '\0';
+            prv_write_char('\b');
+        }
+
+        // Replace the content of the rx buffer with the match
+        strncpy(g_cli_cfg->rx_char_buffer, matches[0], CLI_MAX_RX_BUFFER_SIZE);
+        g_cli_cfg->nof_stored_chars_in_rx_buffer = strlen(matches[0]);
+
+        // Write the autocompleted command to the console
+        prv_write_string(g_cli_cfg->rx_char_buffer);
+    }
 }
