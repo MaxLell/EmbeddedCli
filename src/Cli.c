@@ -1,6 +1,7 @@
 #include "Cli.h"
 
 #include <stdarg.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
@@ -12,16 +13,12 @@
  * # Defines
  * ###########################################################################*/
 
-typedef uint8_t cli_bool_t;
-
 #define CLI_MAX_NOF_ARGUMENTS (16)
 #define CLI_PROMPT            "> "
 #define CLI_PROMPT_SPACER     '='
 #define CLI_SECTION_SPACER    '-'
 #define CLI_OUTPUT_WIDTH      50
 #define CLI_CANARY            (0xA5A5A5A5U)
-#define CLI_TRUE              (1)
-#define CLI_FALSE             (0)
 #define CLI_OK_PROMPT         "\033[32m[OK]  \033[0m "
 #define CLI_FAIL_PROMPT       "\033[31m[FAIL]\033[0m "
 
@@ -43,7 +40,7 @@ static void prv_write_cmd_unknown(const char* const in_cmd_name);
 static void prv_plot_lines(char in_char, int length);
 
 static void prv_reset_rx_buffer(void);
-static cli_bool_t prv_is_rx_buffer_full(void);
+static bool prv_is_rx_buffer_full(void);
 static char prv_get_last_recv_char_from_rx_buffer(void);
 
 static const cli_binding_t* prv_find_cmd(const char* const in_cmd_name);
@@ -66,14 +63,10 @@ void cli_init(cli_cfg_t* const inout_module_cfg, cli_put_char_fn in_put_char_fn)
 {
     { // Input Checks
         ASSERT(inout_module_cfg);
-        ASSERT(CLI_FALSE == inout_module_cfg->is_initialized);
+        ASSERT(false == inout_module_cfg->is_initialized);
         ASSERT(NULL == g_cli_cfg); // only one instance allowed
         ASSERT(in_put_char_fn);
     }
-
-    cli_binding_t help_cmd_binding = {"help", prv_cmd_handler_help, NULL, "List all commands"};
-    cli_binding_t clear_cmd_binding = {"clear", prv_cmd_handler_clear_screen, NULL, "Clear the screen"};
-    cli_binding_t reset_cmd_binding = {"reset", prv_cmd_handler_reset_cli, NULL, "Reset the CLI"};
 
     inout_module_cfg->start_canary_word = CLI_CANARY;
     inout_module_cfg->end_canary_word = CLI_CANARY;
@@ -85,14 +78,21 @@ void cli_init(cli_cfg_t* const inout_module_cfg, cli_put_char_fn in_put_char_fn)
     // Store the config locally in a static variable
     g_cli_cfg = inout_module_cfg;
 
-    g_cli_cfg->is_initialized = CLI_TRUE;
+    g_cli_cfg->is_initialized = true;
 
+    // Register the default commands
+    cli_binding_t help_cmd_binding = {"help", prv_cmd_handler_help, NULL, "List all commands"};
+    cli_binding_t clear_cmd_binding = {"clear", prv_cmd_handler_clear_screen, NULL, "Clear the screen"};
+    cli_binding_t reset_cmd_binding = {"reset", prv_cmd_handler_reset_cli, NULL, "Reset the CLI"};
     cli_register(&help_cmd_binding);
     cli_register(&clear_cmd_binding);
     cli_register(&reset_cmd_binding);
 
     // reset the cli
     prv_cmd_handler_clear_screen(0, NULL, NULL);
+
+    // Print the prompt
+    prv_write_cli_prompt();
 
     return;
 }
@@ -101,7 +101,7 @@ void cli_receive(char in_char)
 {
     prv_verify_object_integrity(g_cli_cfg);
 
-    if (CLI_TRUE == prv_is_rx_buffer_full())
+    if (true == prv_is_rx_buffer_full())
     {
         // Buffer full - ignore the character
         prv_write_string("Buffer is full\n");
@@ -113,15 +113,17 @@ void cli_receive(char in_char)
         return;
     }
 
-    cli_bool_t is_autocomplete_active = CLI_FALSE;
+    bool is_autocomplete_active = false;
 
     switch (in_char)
     {
         case 0x7F: // DEL
         case '\b': // Backspace
         {
-            cli_bool_t rx_buffer_has_chars = (g_cli_cfg->nof_stored_chars_in_rx_buffer > 0);
-            if (CLI_TRUE == rx_buffer_has_chars)
+            bool rx_buffer_has_chars = (g_cli_cfg->nof_stored_chars_in_rx_buffer > 0);
+
+            // Only delete characters, when there are characters in the buffer.
+            if (true == rx_buffer_has_chars)
             {
                 g_cli_cfg->nof_stored_chars_in_rx_buffer--;
                 uint8_t idx = g_cli_cfg->nof_stored_chars_in_rx_buffer;
@@ -135,13 +137,12 @@ void cli_receive(char in_char)
             }
             break;
         }
-        case '\t':
+        case '\t': // Tab
         {
-            is_autocomplete_active = CLI_TRUE;
-            // cli_print("Autocomplete not implemented yet\n");
+            is_autocomplete_active = true;
             break;
         }
-        case '\r':
+        case '\r': // Carriage Return
         {
             // Convert CR to LF to handle Enter key from terminal programs
             in_char = '\n';
@@ -164,22 +165,24 @@ void cli_receive(char in_char)
         }
     }
 
-    if (CLI_TRUE == is_autocomplete_active)
+    if (true == is_autocomplete_active)
     {
-        is_autocomplete_active = CLI_FALSE;
+        bool is_command_string = true;
 
-        // Check that there is no ' ' character in the rx buffer - no autocompletes on arguments only commands
-        cli_bool_t is_command_part = CLI_TRUE;
+        // Reset the autocomplete Flag
+        is_autocomplete_active = false;
+
+        // Check that there is no ' ' character in the rx buffer - no autocompletes on arguments; only commands
         for (uint8_t i = 0; i < g_cli_cfg->nof_stored_chars_in_rx_buffer; i++)
         {
             if (' ' == g_cli_cfg->rx_char_buffer[i])
             {
-                is_command_part = CLI_FALSE;
+                is_command_string = false;
                 break;
             }
         }
 
-        if (CLI_TRUE == is_command_part)
+        if (true == is_command_string)
         {
             // Find all matching commands
             const char* command_names[CLI_MAX_NOF_CALLBACKS] = {0};
@@ -196,6 +199,7 @@ void cli_receive(char in_char)
             if (nof_matches == 1)
             {
                 // Only one match - autocomplete the command
+                // If there are more matches, then the user needs to provide more letters for specification
                 // Calculate how many characters we need to delete (current input)
                 uint8_t chars_to_delete = g_cli_cfg->nof_stored_chars_in_rx_buffer;
 
@@ -212,11 +216,6 @@ void cli_receive(char in_char)
                 // Write the autocompleted command to the console
                 prv_write_string(g_cli_cfg->rx_char_buffer);
             }
-            else if (nof_matches > 1)
-            {
-                // Multiple matches - do nothing (like bash tab completion)
-                // This means the user needs to type more characters to disambiguate
-            }
         }
     }
 
@@ -225,13 +224,13 @@ void cli_receive(char in_char)
 
 void cli_process()
 {
-    prv_verify_object_integrity(g_cli_cfg);
-
     char* argv[CLI_MAX_NOF_ARGUMENTS] = {0};
     uint8_t argc = 0;
     int cmd_status = CLI_FAIL_STATUS;
 
-    if ((prv_get_last_recv_char_from_rx_buffer() != '\n') && ((CLI_FALSE == prv_is_rx_buffer_full())))
+    prv_verify_object_integrity(g_cli_cfg);
+
+    if ((prv_get_last_recv_char_from_rx_buffer() != '\n') && ((false == prv_is_rx_buffer_full())))
     {
         // Do nothing, if these conditions are not met
         return;
@@ -291,19 +290,19 @@ void cli_register(const cli_binding_t* const in_cmd_binding)
         return;
     }
 
-    uint8_t does_binding_exist = CLI_FALSE;
-    uint8_t is_binding_stored = CLI_FALSE;
+    uint8_t does_binding_exist = false;
+    uint8_t is_binding_stored = false;
 
     for (uint8_t i = 0; i < g_cli_cfg->nof_stored_cmd_bindings; i++)
     {
         const cli_binding_t* cmd_binding = &g_cli_cfg->cmd_bindings_buffer[i];
         if (0 == strncmp(cmd_binding->name, in_cmd_binding->name, CLI_MAX_CMD_NAME_LENGTH))
         {
-            does_binding_exist = CLI_TRUE;
+            does_binding_exist = true;
             break;
         }
     }
-    ASSERT(CLI_FALSE == does_binding_exist);
+    ASSERT(false == does_binding_exist);
 
     if (g_cli_cfg->nof_stored_cmd_bindings < CLI_MAX_NOF_CALLBACKS)
     {
@@ -313,10 +312,10 @@ void cli_register(const cli_binding_t* const in_cmd_binding)
         g_cli_cfg->nof_stored_cmd_bindings++;
 
         // Mark that the binding was stored
-        is_binding_stored = CLI_TRUE;
+        is_binding_stored = true;
     }
 
-    ASSERT(CLI_TRUE == is_binding_stored);
+    ASSERT(true == is_binding_stored);
 
     (void)does_binding_exist;
     (void)is_binding_stored;
@@ -343,14 +342,14 @@ void cli_unregister(const char* const in_cmd_name)
         return;
     }
 
-    uint8_t is_binding_found = CLI_FALSE;
+    uint8_t is_binding_found = false;
 
     for (uint8_t i = 0; i < g_cli_cfg->nof_stored_cmd_bindings; i++)
     {
         cli_binding_t* cmd_binding = &g_cli_cfg->cmd_bindings_buffer[i];
         if (0 == strncmp(cmd_binding->name, in_cmd_name, CLI_MAX_CMD_NAME_LENGTH))
         {
-            is_binding_found = CLI_TRUE;
+            is_binding_found = true;
             // Shift all following bindings one position to the left
             for (uint8_t j = i; j < g_cli_cfg->nof_stored_cmd_bindings - 1; j++)
             {
@@ -361,7 +360,7 @@ void cli_unregister(const char* const in_cmd_name)
             break;
         }
     }
-    ASSERT(CLI_TRUE == is_binding_found);
+    ASSERT(true == is_binding_found);
 
     (void)is_binding_found;
 
@@ -391,7 +390,7 @@ void cli_deinit(cli_cfg_t* const inout_module_cfg)
         prv_verify_object_integrity(inout_module_cfg);
         ASSERT(inout_module_cfg == g_cli_cfg); // only one instance allowed
     }
-    inout_module_cfg->is_initialized = CLI_FALSE;
+    inout_module_cfg->is_initialized = false;
     g_cli_cfg = NULL;
 
     // Clear the config structure
@@ -472,12 +471,12 @@ static void prv_reset_rx_buffer()
     g_cli_cfg->nof_stored_chars_in_rx_buffer = 0;
 }
 
-static cli_bool_t prv_is_rx_buffer_full()
+static bool prv_is_rx_buffer_full()
 {
     { // Input Checks
         prv_verify_object_integrity(g_cli_cfg);
     }
-    return (g_cli_cfg->nof_stored_chars_in_rx_buffer < CLI_MAX_RX_BUFFER_SIZE) ? CLI_FALSE : CLI_TRUE;
+    return (g_cli_cfg->nof_stored_chars_in_rx_buffer < CLI_MAX_RX_BUFFER_SIZE) ? false : true;
 }
 
 static char prv_get_last_recv_char_from_rx_buffer(void)
@@ -535,8 +534,8 @@ static uint8_t prv_get_args_from_rx_buffer(char* array_of_arguments[], uint8_t m
         ASSERT(nof_identified_arguments <= max_arguments);
 
         char* const current_char = &g_cli_cfg->rx_char_buffer[i];
-        const cli_bool_t is_delimiter_char = (' ' == *current_char || '\n' == *current_char);
-        const cli_bool_t is_last_char = (i == (g_cli_cfg->nof_stored_chars_in_rx_buffer - 1));
+        const bool is_delimiter_char = (' ' == *current_char || '\n' == *current_char);
+        const bool is_last_char = (i == (g_cli_cfg->nof_stored_chars_in_rx_buffer - 1));
 
         if (is_delimiter_char)
         {
@@ -617,7 +616,7 @@ static void prv_verify_object_integrity(const cli_cfg_t* const in_ptCfg)
     ASSERT(in_ptCfg);
     ASSERT(in_ptCfg->rx_char_buffer);
     ASSERT(in_ptCfg->put_char_fn);
-    ASSERT(CLI_TRUE == in_ptCfg->is_initialized);
+    ASSERT(true == in_ptCfg->is_initialized);
     ASSERT(CLI_CANARY == in_ptCfg->start_canary_word);
     ASSERT(CLI_CANARY == in_ptCfg->mid_canary_word);
     ASSERT(CLI_CANARY == in_ptCfg->end_canary_word);
