@@ -77,7 +77,6 @@ static void prv_autocomplete_command(void);
 
 static int prv_cmd_handler_help(int argc, char* argv[], void* context);
 static int prv_cmd_handler_clear_screen(int argc, char* argv[], void* context);
-static int prv_cmd_handler_reset_cli(int argc, char* argv[], void* context);
 
 static void prv_verify_object_integrity(const cli_cfg_t* const in_ptCfg);
 
@@ -109,10 +108,8 @@ void cli_init(cli_cfg_t* const inout_module_cfg, cli_put_char_fn in_put_char_fn)
     // Register the default commands
     cli_binding_t help_cmd_binding = {"help", prv_cmd_handler_help, NULL, "List all commands"};
     cli_binding_t clear_cmd_binding = {"clear", prv_cmd_handler_clear_screen, NULL, "Clear the screen"};
-    cli_binding_t reset_cmd_binding = {"reset", prv_cmd_handler_reset_cli, NULL, "Reset the CLI"};
     cli_register(&help_cmd_binding);
     cli_register(&clear_cmd_binding);
-    cli_register(&reset_cmd_binding);
 
     // reset the cli
     prv_cmd_handler_clear_screen(0, NULL, NULL);
@@ -561,23 +558,6 @@ static int prv_cmd_handler_help(int argc, char* argv[], void* context)
     (void)argc;
     (void)argv;
     (void)context;
-
-    return CLI_OK_STATUS;
-}
-
-static int prv_cmd_handler_reset_cli(int argc, char* argv[], void* context)
-{
-    (void)argc;
-    (void)argv;
-    (void)context;
-
-    // Clear the screen
-    prv_cmd_handler_clear_screen(0, NULL, NULL);
-
-    // Reset the Rx Buffer and print the welcome message
-    prv_reset_rx_buffer();
-    prv_write_string("CLI was reset - enter your commands (or enter 'help')\n");
-    prv_write_cli_prompt();
 
     return CLI_OK_STATUS;
 }
