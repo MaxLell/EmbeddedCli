@@ -186,8 +186,6 @@ void cli_receive(char in_char)
             break;
         }
     }
-
-    ASSERT(g_cli_cfg_reference->nof_stored_chars_in_rx_buffer <= CLI_MAX_RX_BUFFER_SIZE);
 }
 
 void cli_process()
@@ -252,15 +250,10 @@ void cli_register(const cli_binding_t* const in_cmd_binding)
         prv_verify_object_integrity(g_cli_cfg_reference);
     }
 
-    if ((NULL == in_cmd_binding) || (0 == strlen(in_cmd_binding->name))
-        || (strlen(in_cmd_binding->name) >= CLI_MAX_CMD_NAME_LENGTH) || NULL == in_cmd_binding->cmd_fn)
-    {
-        return;
-    }
-
     uint8_t does_binding_exist = false;
     uint8_t is_binding_stored = false;
 
+    // Check whether the binding is already present - it must not be
     for (uint8_t i = 0; i < g_cli_cfg_reference->nof_stored_cmd_bindings; i++)
     {
         const cli_binding_t* cmd_binding = &g_cli_cfg_reference->cmd_bindings_buffer[i];
@@ -571,6 +564,7 @@ static void prv_verify_object_integrity(const cli_cfg_t* const in_ptCfg)
     ASSERT(CLI_CANARY == in_ptCfg->start_canary_word);
     ASSERT(CLI_CANARY == in_ptCfg->mid_canary_word);
     ASSERT(CLI_CANARY == in_ptCfg->end_canary_word);
+    ASSERT(in_ptCfg->nof_stored_chars_in_rx_buffer <= CLI_MAX_RX_BUFFER_SIZE);
 }
 
 static void prv_plot_lines(char in_char, int length)
