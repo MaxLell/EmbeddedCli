@@ -147,12 +147,6 @@ static void mock_assert_callback(const char* file, uint32_t line, const char* ex
     last_assert_trigger.last_assert_line = line;
     last_assert_trigger.last_assert_expr = expr;
     last_assert_trigger.test_name = current_test_name;
-
-    printf("=== ASSERT TRIGGERED ===================================================\n");
-    printf("Test: %s\n", current_test_name ? current_test_name : "Unknown");
-    printf("File: %s(%u)\n", file, line);
-    printf("Expression: %s\n", expr);
-    printf("========================================================================\n\n\n");
 }
 
 // #############################################################################
