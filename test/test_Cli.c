@@ -256,7 +256,6 @@ void test_cli_help_command_lists_registered_commands(void)
     // Check that the output contains the help information
     TEST_ASSERT_NOT_EQUAL(0, mock_print_index);
     TEST_ASSERT_NOT_NULL(strstr(mock_print_buffer, "* help:"));
-    TEST_ASSERT_NOT_NULL(strstr(mock_print_buffer, "* clear:"));
     TEST_ASSERT_NOT_NULL(strstr(mock_print_buffer, "* hello:"));
     TEST_ASSERT_NOT_NULL(strstr(mock_print_buffer, "* args:"));
     TEST_ASSERT_NOT_NULL(strstr(mock_print_buffer, "* echo:"));
@@ -290,7 +289,6 @@ void test_cli_help_command_lists_registered_commands(void)
     // Check that the output contains the help information for built-in commands only
     TEST_ASSERT_NOT_EQUAL(0, mock_print_index);
     TEST_ASSERT_NOT_NULL(strstr(mock_print_buffer, "* help:"));
-    TEST_ASSERT_NOT_NULL(strstr(mock_print_buffer, "* clear:"));
     TEST_ASSERT_NULL(strstr(mock_print_buffer, "* hello:"));
     TEST_ASSERT_NULL(strstr(mock_print_buffer, "* args:"));
     TEST_ASSERT_NULL(strstr(mock_print_buffer, "* echo:"));
@@ -388,7 +386,6 @@ void test_cli_backspace_removes_characters(void)
     // Check that the help command was executed successfully
     TEST_ASSERT_NOT_EQUAL(0, mock_print_index);
     TEST_ASSERT_NOT_NULL(strstr(mock_print_buffer, "* help:"));
-    TEST_ASSERT_NOT_NULL(strstr(mock_print_buffer, "* clear:"));
 }
 
 void test_cli_backspace_on_empty_buffer(void)
@@ -511,20 +508,6 @@ void test_cli_register_too_many_commands_triggers_assert(void)
     verify_assert_triggered("test_cli_register_too_many_commands_triggers_assert");
 }
 
-void test_cli_clear_command_works(void)
-{
-    const char* input = "clear\n";
-    for (size_t i = 0; i < strlen(input); i++)
-    {
-        cli_receive(input[i]);
-    }
-
-    cli_process();
-
-    // Check that clear screen ANSI codes are present
-    TEST_ASSERT_NOT_NULL(strstr(mock_print_buffer, "\033[2J\033[H"));
-}
-
 void test_cli_buffer_full_message(void)
 {
     // Fill buffer to exactly the maximum capacity
@@ -624,7 +607,7 @@ void test_cli_echo_command_wrong_arguments(void)
 
 void test_prv_find_matching_strings(void)
 {
-    const char* input_strings[] = {"help", "hello", "clear"};
+    const char* input_strings[] = {"help", "hello", "dummy"};
     const char* matches[10];
     uint8_t num_matches;
 
