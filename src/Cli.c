@@ -129,7 +129,6 @@ void cli_receive(char in_char)
 
         // Reset the buffer to avoid overflows
         prv_reset_rx_buffer();
-        prv_write_cli_prompt();
 
         return;
     }
@@ -227,7 +226,6 @@ void cli_process()
 
     // Reset the cli buffer and write the prompt again for a new user input
     prv_reset_rx_buffer();
-    prv_write_cli_prompt();
 }
 
 void cli_receive_and_process(char in_char)
@@ -406,6 +404,8 @@ static void prv_write_cli_prompt()
     { // Input Checks
         prv_verify_object_integrity(g_cli_cfg_reference);
     }
+    prv_plot_lines(CLI_PROMPT_SPACER, CLI_OUTPUT_WIDTH);
+    prv_write_string("Embedded CLI - Type 'help' to list all commands\n");
     prv_plot_lines(CLI_PROMPT_SPACER, CLI_OUTPUT_WIDTH);
     prv_write_string(CLI_PROMPT);
 }
