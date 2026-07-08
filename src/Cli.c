@@ -443,6 +443,11 @@ static char prv_get_last_recv_char_from_rx_buffer(void)
     { // Input Checks
         prv_verify_object_integrity(g_cli_cfg_reference);
     }
+    // Guard against an empty buffer: index (0 - 1) would read out of bounds.
+    if (0 == g_cli_cfg_reference->nof_stored_chars_in_rx_buffer)
+    {
+        return '\0';
+    }
     return g_cli_cfg_reference->rx_char_buffer[g_cli_cfg_reference->nof_stored_chars_in_rx_buffer - 1];
 }
 
@@ -486,7 +491,12 @@ static uint8_t prv_get_args_from_rx_buffer(char* array_of_arguments[], uint8_t m
     // Process the Buffer - tokenize arguments separated by spaces or newlines
     for (uint8_t i = 0; i < g_cli_cfg_reference->nof_stored_chars_in_rx_buffer; i++)
     {
-        ASSERT(nof_identified_arguments <= max_arguments);
+        // Stop once argv is full, otherwise the writes below would run past the
+        // caller's array (array_of_arguments has exactly max_arguments slots).
+        if (nof_identified_arguments >= max_arguments)
+        {
+            break;
+        }
 
         char* const current_char = &g_cli_cfg_reference->rx_char_buffer[i];
         const bool is_delimiter_char = (' ' == *current_char || '\n' == *current_char);
